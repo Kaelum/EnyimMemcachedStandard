@@ -11,3 +11,7 @@ Tester/
 TestResults/
 output/
 TestResult*.xml
+/Amazon.ElastiCacheCluster/Amazon.ElastiCacheCluster.xml
+/Enyim.Caching/Enyim.Caching.xml
+/Enyim.Caching.Log4NetAdapter/Enyim.Caching.Log4NetAdapter.xml
+/Enyim.Caching.NLogAdapter/Enyim.Caching.NLogAdapter.xml

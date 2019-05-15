@@ -10,7 +10,7 @@
     <LangVersion>latest</LangVersion>
     <Platforms>AnyCPU;x64;x86</Platforms>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>D:\Work\GitHub\Kaelum\EnyimMemcachedStandard\.resources\awskey.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>..\.resources\awskey.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
