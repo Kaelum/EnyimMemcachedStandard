@@ -3271,7 +3271,7 @@ namespace MemcachedTest
 				"10.0.1.7:11211",
 				"10.0.1.8:11211"};
 
-			var nodes = servers.
+			List<IMemcachedNode> nodes = servers.
 							Select(s => new MockNode(new IPEndPoint(IPAddress.Parse(s.Substring(0, s.IndexOf(":"))), 11211))).
 							Cast<IMemcachedNode>().
 							ToList();
@@ -3279,7 +3279,7 @@ namespace MemcachedTest
 			IMemcachedNodeLocator ketama = new KetamaNodeLocator();
 			ketama.Initialize(nodes.ToList());
 
-			foreach (var pair in exp)
+			foreach (string[] pair in exp)
 			{
 				var node = ketama.Locate(pair[0]);
 

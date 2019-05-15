@@ -1,26 +1,37 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
+
 using Enyim.Caching.Memcached.Results;
 using Enyim.Caching.Memcached.Results.Extensions;
 
 namespace Enyim.Caching.Memcached.Protocol.Binary
 {
+	/// <summary>
+	///		Summary description for
+	/// </summary>
 	public class MultiGetOperation : BinaryMultiItemOperation, IMultiGetOperation
 	{
-		private static readonly Enyim.Caching.ILog log = Enyim.Caching.LogManager.GetLogger(typeof(MultiGetOperation));
+		private static readonly Enyim.Caching.ILog _log = LogManager.GetLogger(typeof(MultiGetOperation));
 
-		private Dictionary<string, CacheItem> result;
-		private Dictionary<int, string> idToKey;
-		private int noopId;
+		private Dictionary<string, CacheItem> _result;
+		private Dictionary<int, string> _idToKey;
+		private int _noopId;
 
-		public MultiGetOperation(IList<string> keys) : base(keys) { }
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="keys"></param>
+		public MultiGetOperation(IList<string> keys)
+			: base(keys) { }
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
 		protected override BinaryRequest Build(string key)
 		{
-			var request = new BinaryRequest(OpCode.GetQ)
+			BinaryRequest request = new BinaryRequest(OpCode.GetQ)
 			{
 				Key = key
 			};
@@ -28,40 +39,49 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			return request;
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <returns></returns>
 		protected internal override IList<ArraySegment<byte>> GetBuffer()
 		{
-			var keys = this.Keys;
+			var keys = Keys;
 
 			if (keys == null || keys.Count == 0)
 			{
-				if (log.IsWarnEnabled) log.Warn("Empty multiget!");
+				if (_log.IsWarnEnabled)
+				{
+					_log.Warn("Empty multiget!");
+				}
 
 				return new ArraySegment<byte>[0];
 			}
 
-			if (log.IsDebugEnabled)
-				log.DebugFormat("Building multi-get for {0} keys", keys.Count);
+			if (_log.IsDebugEnabled)
+			{
+				_log.DebugFormat("Building multi-get for {0} keys", keys.Count);
+			}
 
 			// map the command's correlationId to the item key,
 			// so we can use GetQ (which only returns the item data)
-			this.idToKey = new Dictionary<int, string>();
+			_idToKey = new Dictionary<int, string>();
 
 			// get ops have 2 segments, header + key
-			var buffers = new List<ArraySegment<byte>>(keys.Count * 2);
+			List<ArraySegment<byte>> buffers = new List<ArraySegment<byte>>(keys.Count * 2);
 
-			foreach (var key in keys)
+			foreach (string key in keys)
 			{
-				var request = this.Build(key);
+				var request = Build(key);
 
 				request.CreateBuffer(buffers);
 
 				// we use this to map the responses to the keys
-				idToKey[request.CorrelationId] = key;
+				_idToKey[request.CorrelationId] = key;
 			}
 
 			// uncork the server
-			var noop = new BinaryRequest(OpCode.NoOp);
-			this.noopId = noop.CorrelationId;
+			BinaryRequest noop = new BinaryRequest(OpCode.NoOp);
+			_noopId = noop.CorrelationId;
 
 			noop.CreateBuffer(buffers);
 
@@ -69,151 +89,197 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 		}
 
 
-		private PooledSocket currentSocket;
-		private BinaryResponse asyncReader;
-		private bool? asyncLoopState;
-		private Action<bool> afterAsyncRead;
+		private PooledSocket _currentSocket;
+		private BinaryResponse _asyncReader;
+		private bool? _asyncLoopState;
+		private Action<bool> _afterAsyncRead;
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="socket"></param>
+		/// <param name="next"></param>
+		/// <returns></returns>
 		protected internal override bool ReadResponseAsync(PooledSocket socket, Action<bool> next)
 		{
-			this.result = new Dictionary<string, CacheItem>();
-			this.Cas = new Dictionary<string, ulong>();
+			_result = new Dictionary<string, CacheItem>();
+			Cas = new Dictionary<string, ulong>();
 
-			this.currentSocket = socket;
-			this.asyncReader = new BinaryResponse();
-			this.asyncLoopState = null;
-			this.afterAsyncRead = next;
+			_currentSocket = socket;
+			_asyncReader = new BinaryResponse();
+			_asyncLoopState = null;
+			_afterAsyncRead = next;
 
-			return this.DoReadAsync();
+			return DoReadAsync();
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <returns></returns>
 		private bool DoReadAsync()
 		{
-			bool ioPending;
+			var reader = _asyncReader;
 
-			var reader = this.asyncReader;
-
-			while (this.asyncLoopState == null)
+			while (_asyncLoopState == null)
 			{
-				var readSuccess = reader.ReadAsync(this.currentSocket, this.EndReadAsync, out ioPending);
-				this.StatusCode = reader.StatusCode;
+				bool readSuccess = reader.ReadAsync(_currentSocket, EndReadAsync, out bool ioPending);
+				StatusCode = reader.StatusCode;
 
-				if (ioPending) return readSuccess;
+				if (ioPending)
+				{
+					return readSuccess;
+				}
 
 				if (!readSuccess)
-					this.asyncLoopState = false;
-				else if (reader.CorrelationId == this.noopId)
-					this.asyncLoopState = true;
+				{
+					_asyncLoopState = false;
+				}
+				else if (reader.CorrelationId == _noopId)
+				{
+					_asyncLoopState = true;
+				}
 				else
-					this.StoreResult(reader);
+				{
+					StoreResult(reader);
+				}
 			}
 
-			this.afterAsyncRead((bool)this.asyncLoopState);
+			_afterAsyncRead((bool)_asyncLoopState);
 
 			return true;
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="readSuccess"></param>
 		private void EndReadAsync(bool readSuccess)
 		{
 			if (!readSuccess)
-				this.asyncLoopState = false;
-			else if (this.asyncReader.CorrelationId == this.noopId)
-				this.asyncLoopState = true;
+			{
+				_asyncLoopState = false;
+			}
+			else if (_asyncReader.CorrelationId == _noopId)
+			{
+				_asyncLoopState = true;
+			}
 			else
-				StoreResult(this.asyncReader);
+			{
+				StoreResult(_asyncReader);
+			}
 
-			this.DoReadAsync();
+			DoReadAsync();
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="reader"></param>
 		private void StoreResult(BinaryResponse reader)
 		{
-			string key;
-
 			// find the key to the response
-			if (!this.idToKey.TryGetValue(reader.CorrelationId, out key))
+			if (!_idToKey.TryGetValue(reader.CorrelationId, out string key))
 			{
 				// we're not supposed to get here tho
-				log.WarnFormat("Found response with CorrelationId {0}, but no key is matching it.", reader.CorrelationId);
+				_log.WarnFormat("Found response with CorrelationId {0}, but no key is matching it.", reader.CorrelationId);
 			}
 			else
 			{
-				if (log.IsDebugEnabled) log.DebugFormat("Reading item {0}", key);
+				if (_log.IsDebugEnabled)
+				{
+					_log.DebugFormat("Reading item {0}", key);
+				}
 
 				// deserialize the response
-				var flags = (ushort)BinaryConverter.DecodeInt32(reader.Extra, 0);
+				ushort flags = (ushort)BinaryConverter.DecodeInt32(reader.Extra, 0);
 
-				this.result[key] = new CacheItem(flags, reader.Data);
-				this.Cas[key] = reader.CAS;
+				_result[key] = new CacheItem(flags, reader.Data);
+				Cas[key] = reader.CAS;
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="socket"></param>
+		/// <returns></returns>
 		protected internal override IOperationResult ReadResponse(PooledSocket socket)
 		{
-			this.result = new Dictionary<string, CacheItem>();
-			this.Cas = new Dictionary<string, ulong>();
-			var result = new TextOperationResult();
+			_result = new Dictionary<string, CacheItem>();
+			Cas = new Dictionary<string, ulong>();
+			TextOperationResult result = new TextOperationResult();
 
-			var response = new BinaryResponse();
+			BinaryResponse response = new BinaryResponse();
 
 			while (response.Read(socket))
 			{
-				this.StatusCode = response.StatusCode;
+				StatusCode = response.StatusCode;
 
 				// found the noop, quit
-				if (response.CorrelationId == this.noopId)
+				if (response.CorrelationId == _noopId)
+				{
 					return result.Pass();
-
-				string key;
+				}
 
 				// find the key to the response
-				if (!this.idToKey.TryGetValue(response.CorrelationId, out key))
+				if (!_idToKey.TryGetValue(response.CorrelationId, out string key))
 				{
 					// we're not supposed to get here tho
-					log.WarnFormat("Found response with CorrelationId {0}, but no key is matching it.", response.CorrelationId);
+					_log.WarnFormat("Found response with CorrelationId {0}, but no key is matching it.", response.CorrelationId);
 					continue;
 				}
 
-				if (log.IsDebugEnabled) log.DebugFormat("Reading item {0}", key);
+				if (_log.IsDebugEnabled)
+				{
+					_log.DebugFormat("Reading item {0}", key);
+				}
 
 				// deserialize the response
 				int flags = BinaryConverter.DecodeInt32(response.Extra, 0);
 
-				this.result[key] = new CacheItem((ushort)flags, response.Data);
-				this.Cas[key] = response.CAS;
+				_result[key] = new CacheItem((ushort)flags, response.Data);
+				Cas[key] = response.CAS;
 			}
 
 			// finished reading but we did not find the NOOP
 			return result.Fail("Found response with CorrelationId {0}, but no key is matching it.");
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		public Dictionary<string, CacheItem> Result
 		{
-			get { return this.result; }
+			get { return _result; }
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		Dictionary<string, CacheItem> IMultiGetOperation.Result
 		{
-			get { return this.result; }
+			get { return _result; }
 		}
 	}
 }
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

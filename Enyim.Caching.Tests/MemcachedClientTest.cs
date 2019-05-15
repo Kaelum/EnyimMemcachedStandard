@@ -1,37 +1,45 @@
 using System;
-using System.Net;
-using System.Threading;
-using Enyim.Caching;
-using Enyim.Caching.Configuration;
-using Enyim.Caching.Memcached;
-using NUnit.Framework;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Text;
+using System.Threading;
+
+using Enyim.Caching;
+using Enyim.Caching.Memcached;
+
+using log4net.Config;
+using log4net.Repository;
+
+using NUnit.Framework;
 
 namespace MemcachedTest
 {
 	[TestFixture]
 	public abstract class MemcachedClientTest
 	{
-		private static readonly Enyim.Caching.ILog log = Enyim.Caching.LogManager.GetLogger(typeof(MemcachedClientTest));
+		private static readonly Enyim.Caching.ILog _log = Enyim.Caching.LogManager.GetLogger(typeof(MemcachedClientTest));
 		public const string TestObjectKey = "Hello_World";
 
 		protected abstract MemcachedClient GetClient();
 
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void FixtureSetUp()
 		{
-			log4net.Config.XmlConfigurator.Configure();
+			ILoggerRepository loggerRepository = log4net.LogManager.GetRepository(Assembly.GetExecutingAssembly());
+			FileInfo configFileInfo = new FileInfo("App.config");
+			XmlConfigurator.Configure(loggerRepository, configFileInfo);
+
 			MemcachedTest.TestSetup.Run();
 		}
 
-		[TestFixtureTearDown]
+		[OneTimeTearDown]
 		public void FixtureTearDown()
 		{
 			MemcachedTest.TestSetup.Cleanup();
 		}
 
-		[global::System.Serializable]
+		[Serializable]
 		public class TestData
 		{
 			public TestData() { }
@@ -200,42 +208,42 @@ namespace MemcachedTest
 		{
 			using (MemcachedClient client = GetClient())
 			{
-				log.Debug("Cache should be empty.");
+				_log.Debug("Cache should be empty.");
 
 				Assert.IsTrue(client.Store(StoreMode.Set, "VALUE", "1"), "Initialization failed");
 
-				log.Debug("Setting VALUE to 1.");
+				_log.Debug("Setting VALUE to 1.");
 
 				Assert.AreEqual("1", client.Get("VALUE"), "Store failed");
 
-				log.Debug("Adding VALUE; this should return false.");
+				_log.Debug("Adding VALUE; this should return false.");
 				Assert.IsFalse(client.Store(StoreMode.Add, "VALUE", "2"), "Add should have failed");
 
-				log.Debug("Checking if VALUE is still '1'.");
+				_log.Debug("Checking if VALUE is still '1'.");
 				Assert.AreEqual("1", client.Get("VALUE"), "Item should not have been Added");
 
-				log.Debug("Replacing VALUE; this should return true.");
+				_log.Debug("Replacing VALUE; this should return true.");
 				Assert.IsTrue(client.Store(StoreMode.Replace, "VALUE", "4"), "Replace failed");
 
-				log.Debug("Checking if VALUE is '4' so it got replaced.");
+				_log.Debug("Checking if VALUE is '4' so it got replaced.");
 				Assert.AreEqual("4", client.Get("VALUE"), "Item should have been replaced");
 
-				log.Debug("Removing VALUE.");
+				_log.Debug("Removing VALUE.");
 				Assert.IsTrue(client.Remove("VALUE"), "Remove failed");
 
-				log.Debug("Replacing VALUE; this should return false.");
+				_log.Debug("Replacing VALUE; this should return false.");
 				Assert.IsFalse(client.Store(StoreMode.Replace, "VALUE", "8"), "Replace should not have succeeded");
 
-				log.Debug("Checking if VALUE is 'null' so it was not replaced.");
+				_log.Debug("Checking if VALUE is 'null' so it was not replaced.");
 				Assert.IsNull(client.Get("VALUE"), "Item should not have been Replaced");
 
-				log.Debug("Adding VALUE; this should return true.");
+				_log.Debug("Adding VALUE; this should return true.");
 				Assert.IsTrue(client.Store(StoreMode.Add, "VALUE", "16"), "Item should have been Added");
 
-				log.Debug("Checking if VALUE is '16' so it was added.");
+				_log.Debug("Checking if VALUE is '16' so it was added.");
 				Assert.AreEqual("16", client.Get("VALUE"), "Add failed");
 
-				log.Debug("Passed AddSetReplaceTest.");
+				_log.Debug("Passed AddSetReplaceTest.");
 			}
 		}
 
@@ -253,16 +261,16 @@ namespace MemcachedTest
 			}
 		}
 
-		private string[] keyParts = { "multi", "get", "test", "key", "parts", "test", "values" };
+		private string[] _keyParts = { "multi", "get", "test", "key", "parts", "test", "values" };
 
 		protected string MakeRandomKey(int partCount)
 		{
-			var sb = new StringBuilder();
-			var rnd = new Random();
+			StringBuilder sb = new StringBuilder();
+			Random rnd = new Random();
 
-			for (var i = 0; i < partCount; i++)
+			for (int i = 0; i < partCount; i++)
 			{
-				sb.Append(keyParts[rnd.Next(keyParts.Length)]).Append(":");
+				sb.Append(_keyParts[rnd.Next(_keyParts.Length)]).Append(":");
 			}
 
 			sb.Length--;
@@ -273,11 +281,11 @@ namespace MemcachedTest
 		[TestCase]
 		public virtual void MultiGetTest()
 		{
-			var prefix = new Random().Next(300) + ":";
+			string prefix = new Random().Next(300) + ":";
 			// note, this test will fail, if memcached version is < 1.2.4
 			using (var client = GetClient())
 			{
-				var keys = new List<string>();
+				List<string> keys = new List<string>();
 
 				for (int i = 0; i < 1000; i++)
 				{
@@ -303,7 +311,9 @@ namespace MemcachedTest
 					string key = keys[i];
 
 					if (!retvals.TryGetValue(key, out value))
+					{
 						Console.WriteLine("missing key: " + key);
+					}
 				}
 
 				Assert.AreEqual(keys.Count, retvals.Count, "MultiGet should have returned " + keys.Count + " items.");
@@ -321,11 +331,11 @@ namespace MemcachedTest
 		[TestCase]
 		public virtual void MultiGetWithCasTest()
 		{
-			var prefix = new Random().Next(300) + ":";
+			string prefix = new Random().Next(300) + ":";
 			// note, this test will fail, if memcached version is < 1.2.4
 			using (var client = GetClient())
 			{
-				var keys = new List<string>();
+				List<string> keys = new List<string>();
 
 				for (int i = 0; i < 1000; i++)
 				{
@@ -344,7 +354,9 @@ namespace MemcachedTest
 					string key = keys[i];
 
 					if (!retvals.TryGetValue(key, out value))
+					{
 						Console.WriteLine("missing key: " + key);
+					}
 				}
 
 				Assert.AreEqual(keys.Count, retvals.Count, "MultiGet should have returned " + keys.Count + " items.");
@@ -390,7 +402,7 @@ namespace MemcachedTest
 #region [ License information          ]
 /* ************************************************************
  *
- *    Copyright (c) 2010 Attila Kiskó, enyim.com
+ *    Copyright (c) 2010 Attila KiskÃ³, enyim.com
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.

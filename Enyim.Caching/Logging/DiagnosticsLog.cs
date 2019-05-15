@@ -8,40 +8,76 @@ using System.Configuration;
 
 namespace Enyim.Caching
 {
+	/// <summary>
+	///		Summary description for
+	/// </summary>
 	public class DiagnosticsLogFactory : ILogFactory
 	{
-		private TextWriter writer;
+		private readonly TextWriter _writer;
 
-		public DiagnosticsLogFactory() : this(ConfigurationManager.AppSettings["Enyim.Caching.Diagnostics.LogPath"]) { }
+		/// <summary>
+		///
+		/// </summary>
+		public DiagnosticsLogFactory()
+			: this(ConfigurationManager.AppSettings["Enyim.Caching.Diagnostics.LogPath"]) { }
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="logPath"></param>
 		public DiagnosticsLogFactory(string logPath)
 		{
-			if (String.IsNullOrEmpty(logPath))
+			if (string.IsNullOrEmpty(logPath))
+			{
 				throw new ArgumentNullException(
 					"Log path must be defined.  Add the following to configuration/appSettings: <add key=\"Enyim.Caching.Diagnostics.LogPath\" "
 					+ "value=\"path to the log file\" /> or specify a valid path in in the constructor.");
+			}
 
-			this.writer = new StreamWriter(logPath, true);
+			_writer = new StreamWriter(logPath, true);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns></returns>
 		ILog ILogFactory.GetLogger(string name)
 		{
-			return new TextWriterLog(name, this.writer);
+			return new TextWriterLog(name, _writer);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="type"></param>
+		/// <returns></returns>
 		ILog ILogFactory.GetLogger(Type type)
 		{
-			return new TextWriterLog(type.FullName, this.writer);
+			return new TextWriterLog(type.FullName, _writer);
 		}
 	}
 
+	/// <summary>
+	///		Summary description for
+	/// </summary>
 	public class ConsoleLogFactory : ILogFactory
 	{
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="name"></param>
+		/// <returns></returns>
 		ILog ILogFactory.GetLogger(string name)
 		{
 			return new TextWriterLog(name, Console.Out);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="type"></param>
+		/// <returns></returns>
 		ILog ILogFactory.GetLogger(Type type)
 		{
 			return new TextWriterLog(type.FullName, Console.Out);
@@ -52,40 +88,40 @@ namespace Enyim.Caching
 
 	internal class TextWriterLog : ILog
 	{
-		private const string PrefixDebug = "DEBUG";
-		private const string PrefixInfo = "INFO";
-		private const string PrefixWarn = "WARN";
-		private const string PrefixError = "ERROR";
-		private const string PrefixFatal = "FATAL";
+		private const string _prefixDebug = "DEBUG";
+		private const string _prefixInfo = "INFO";
+		private const string _prefixWarn = "WARN";
+		private const string _prefixError = "ERROR";
+		private const string _prefixFatal = "FATAL";
 
-		private TextWriter writer;
-		private string name;
+		private TextWriter _writer;
+		private readonly string _name;
 
 		public TextWriterLog(string name, TextWriter writer)
 		{
-			this.name = name;
-			this.writer = writer;
+			_name = name;
+			_writer = writer;
 		}
 
 		private void Dump(string prefix, string message, params object[] args)
 		{
-			var line = String.Format("{0:yyyy-MM-dd' 'HH:mm:ss} [{1}] {2} {3} - ", DateTime.Now, prefix, Thread.CurrentThread.ManagedThreadId, this.name) + String.Format(message, args);
+			string line = string.Format("{0:yyyy-MM-dd' 'HH:mm:ss} [{1}] {2} {3} - ", DateTime.Now, prefix, Thread.CurrentThread.ManagedThreadId, _name) + string.Format(message, args);
 
-			lock (this.writer)
+			lock (_writer)
 			{
-				this.writer.WriteLine(line);
-				this.writer.Flush();
+				_writer.WriteLine(line);
+				_writer.Flush();
 			}
 		}
 
 		private void Dump(string prefix, object message)
 		{
-			var line = String.Format("{0:yyyy-MM-dd' 'HH:mm:ss} [{1}] {2} {3} - {4}", DateTime.Now, prefix, Thread.CurrentThread.ManagedThreadId, this.name, message);
+			string line = string.Format("{0:yyyy-MM-dd' 'HH:mm:ss} [{1}] {2} {3} - {4}", DateTime.Now, prefix, Thread.CurrentThread.ManagedThreadId, _name, message);
 
-			lock (this.writer)
+			lock (_writer)
 			{
-				this.writer.WriteLine(line);
-				this.writer.Flush();
+				_writer.WriteLine(line);
+				_writer.Flush();
 			}
 		}
 
@@ -116,177 +152,177 @@ namespace Enyim.Caching
 
 		void ILog.Debug(object message)
 		{
-			this.Dump(PrefixDebug, message);
+			Dump(_prefixDebug, message);
 		}
 
 		void ILog.Debug(object message, Exception exception)
 		{
-			this.Dump(PrefixDebug, message + " - " + exception);
+			Dump(_prefixDebug, message + " - " + exception);
 		}
 
 		void ILog.DebugFormat(string format, object arg0)
 		{
-			this.Dump(PrefixDebug, format, arg0);
+			Dump(_prefixDebug, format, arg0);
 		}
 
 		void ILog.DebugFormat(string format, object arg0, object arg1)
 		{
-			this.Dump(PrefixDebug, format, arg0, arg1);
+			Dump(_prefixDebug, format, arg0, arg1);
 		}
 
 		void ILog.DebugFormat(string format, object arg0, object arg1, object arg2)
 		{
-			this.Dump(PrefixDebug, format, arg0, arg1, arg2);
+			Dump(_prefixDebug, format, arg0, arg1, arg2);
 		}
 
 		void ILog.DebugFormat(string format, params object[] args)
 		{
-			this.Dump(PrefixDebug, format, args);
+			Dump(_prefixDebug, format, args);
 		}
 
 		void ILog.DebugFormat(IFormatProvider provider, string format, params object[] args)
 		{
-			this.Dump(PrefixDebug, String.Format(provider, format, args));
+			Dump(_prefixDebug, string.Format(provider, format, args));
 		}
 
 		void ILog.Info(object message)
 		{
-			this.Dump(PrefixInfo, message);
+			Dump(_prefixInfo, message);
 		}
 
 		void ILog.Info(object message, Exception exception)
 		{
-			this.Dump(PrefixInfo, message + " - " + exception);
+			Dump(_prefixInfo, message + " - " + exception);
 		}
 
 		void ILog.InfoFormat(string format, object arg0)
 		{
-			this.Dump(PrefixInfo, format, arg0);
+			Dump(_prefixInfo, format, arg0);
 		}
 
 		void ILog.InfoFormat(string format, object arg0, object arg1)
 		{
-			this.Dump(PrefixInfo, format, arg0, arg1);
+			Dump(_prefixInfo, format, arg0, arg1);
 		}
 
 		void ILog.InfoFormat(string format, object arg0, object arg1, object arg2)
 		{
-			this.Dump(PrefixInfo, format, arg0, arg1, arg2);
+			Dump(_prefixInfo, format, arg0, arg1, arg2);
 		}
 
 		void ILog.InfoFormat(string format, params object[] args)
 		{
-			this.Dump(PrefixInfo, format, args);
+			Dump(_prefixInfo, format, args);
 		}
 
 		void ILog.InfoFormat(IFormatProvider provider, string format, params object[] args)
 		{
-			this.Dump(PrefixInfo, String.Format(provider, format, args));
+			Dump(_prefixInfo, string.Format(provider, format, args));
 		}
 
 		void ILog.Warn(object message)
 		{
-			this.Dump(PrefixWarn, message);
+			Dump(_prefixWarn, message);
 		}
 
 		void ILog.Warn(object message, Exception exception)
 		{
-			this.Dump(PrefixWarn, message + " - " + exception);
+			Dump(_prefixWarn, message + " - " + exception);
 		}
 
 		void ILog.WarnFormat(string format, object arg0)
 		{
-			this.Dump(PrefixWarn, format, arg0);
+			Dump(_prefixWarn, format, arg0);
 		}
 
 		void ILog.WarnFormat(string format, object arg0, object arg1)
 		{
-			this.Dump(PrefixWarn, format, arg0, arg1);
+			Dump(_prefixWarn, format, arg0, arg1);
 		}
 
 		void ILog.WarnFormat(string format, object arg0, object arg1, object arg2)
 		{
-			this.Dump(PrefixWarn, format, arg0, arg1, arg2);
+			Dump(_prefixWarn, format, arg0, arg1, arg2);
 		}
 
 		void ILog.WarnFormat(string format, params object[] args)
 		{
-			this.Dump(PrefixWarn, format, args);
+			Dump(_prefixWarn, format, args);
 		}
 
 		void ILog.WarnFormat(IFormatProvider provider, string format, params object[] args)
 		{
-			this.Dump(PrefixWarn, String.Format(provider, format, args));
+			Dump(_prefixWarn, string.Format(provider, format, args));
 		}
 
 		void ILog.Error(object message)
 		{
-			this.Dump(PrefixError, message);
+			Dump(_prefixError, message);
 		}
 
 		void ILog.Error(object message, Exception exception)
 		{
-			this.Dump(PrefixError, message + " - " + exception);
+			Dump(_prefixError, message + " - " + exception);
 		}
 
 		void ILog.ErrorFormat(string format, object arg0)
 		{
-			this.Dump(PrefixError, format, arg0);
+			Dump(_prefixError, format, arg0);
 		}
 
 		void ILog.ErrorFormat(string format, object arg0, object arg1)
 		{
-			this.Dump(PrefixError, format, arg0, arg1);
+			Dump(_prefixError, format, arg0, arg1);
 		}
 
 		void ILog.ErrorFormat(string format, object arg0, object arg1, object arg2)
 		{
-			this.Dump(PrefixError, format, arg0, arg1, arg2);
+			Dump(_prefixError, format, arg0, arg1, arg2);
 		}
 
 		void ILog.ErrorFormat(string format, params object[] args)
 		{
-			this.Dump(PrefixError, format, args);
+			Dump(_prefixError, format, args);
 		}
 
 		void ILog.ErrorFormat(IFormatProvider provider, string format, params object[] args)
 		{
-			this.Dump(PrefixError, String.Format(provider, format, args));
+			Dump(_prefixError, string.Format(provider, format, args));
 		}
 
 		void ILog.Fatal(object message)
 		{
-			this.Dump(PrefixFatal, message);
+			Dump(_prefixFatal, message);
 		}
 
 		void ILog.Fatal(object message, Exception exception)
 		{
-			this.Dump(PrefixFatal, message + " - " + exception);
+			Dump(_prefixFatal, message + " - " + exception);
 		}
 
 		void ILog.FatalFormat(string format, object arg0)
 		{
-			this.Dump(PrefixFatal, format, arg0);
+			Dump(_prefixFatal, format, arg0);
 		}
 
 		void ILog.FatalFormat(string format, object arg0, object arg1)
 		{
-			this.Dump(PrefixFatal, format, arg0, arg1);
+			Dump(_prefixFatal, format, arg0, arg1);
 		}
 
 		void ILog.FatalFormat(string format, object arg0, object arg1, object arg2)
 		{
-			this.Dump(PrefixFatal, format, arg0, arg1, arg2);
+			Dump(_prefixFatal, format, arg0, arg1, arg2);
 		}
 
 		void ILog.FatalFormat(string format, params object[] args)
 		{
-			this.Dump(PrefixFatal, format, args);
+			Dump(_prefixFatal, format, args);
 		}
 
 		void ILog.FatalFormat(IFormatProvider provider, string format, params object[] args)
 		{
-			this.Dump(PrefixFatal, String.Format(provider, format, args));
+			Dump(_prefixFatal, string.Format(provider, format, args));
 		}
 	}
 

@@ -86,6 +86,7 @@ namespace Enyim.Caching.Configuration
 			set;
 		}
 
+		/// <summary></summary>
 		INodeFailurePolicyFactory FailurePolicyFactory { get; set; }
 	}
 }

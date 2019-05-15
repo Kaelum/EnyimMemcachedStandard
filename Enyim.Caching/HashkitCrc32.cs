@@ -16,49 +16,62 @@ namespace Enyim
 
 		public HashkitCrc32()
 		{
-			this.HashSizeValue = 32;
-			this.shouldReset = true;
+			HashSizeValue = 32;
+			shouldReset = true;
 		}
 
 		public override void Initialize()
 		{
 			// ComputeHash calls Initialize
 			// so this way we keep the CurrentValue until the next hash calculation
-			this.shouldReset = true;
+			shouldReset = true;
 		}
 
 		protected override void HashCore(byte[] array, int ibStart, int cbSize)
 		{
-			if (array == null) throw new ArgumentNullException("array");
-			if (ibStart < 0 || ibStart > array.Length) throw new ArgumentOutOfRangeException("ibStart");
-			if (ibStart + cbSize > array.Length) throw new ArgumentOutOfRangeException("cbSize");
-
-			if (this.shouldReset)
+			if (array == null)
 			{
-				this.currentHash = UInt32.MaxValue;
-				this.shouldReset = false;
+				throw new ArgumentNullException("array");
+			}
+
+			if (ibStart < 0 || ibStart > array.Length)
+			{
+				throw new ArgumentOutOfRangeException("ibStart");
+			}
+
+			if (ibStart + cbSize > array.Length)
+			{
+				throw new ArgumentOutOfRangeException("cbSize");
+			}
+
+			if (shouldReset)
+			{
+				currentHash = uint.MaxValue;
+				shouldReset = false;
 			}
 			else
-				this.currentHash ^= UInt32.MaxValue;
+			{
+				currentHash ^= uint.MaxValue;
+			}
 
-			this.UnsafeHashCore(array, ibStart, cbSize);
+			UnsafeHashCore(array, ibStart, cbSize);
 		}
 
 		private void FinalizeHash()
 		{
 			// strangely libhaskit truncates CRC-32 to 15 bits. we'll do the same to be on the safe side.
-			this.currentHash = ((~this.currentHash) >> 16) & 0x7fff;
+			currentHash = ((~currentHash) >> 16) & 0x7fff;
 			//this.currentHash = (~this.currentHash);
 		}
 
 		protected override byte[] HashFinal()
 		{
-			this.FinalizeHash();
+			FinalizeHash();
 
 			return BitConverter.GetBytes((uint)currentHash);
 		}
 
-		public uint CurrentHash { get { return this.currentHash; } }
+		public uint CurrentHash { get { return currentHash; } }
 
 		#region [ UnsafeHashCore               ]
 
@@ -70,7 +83,7 @@ namespace Enyim
 
 				while (count > 0)
 				{
-					this.currentHash = CrcTable[(byte)(this.currentHash ^ (*current))] ^ (this.currentHash >> 8);
+					currentHash = CrcTable[(byte)(currentHash ^ (*current))] ^ (currentHash >> 8);
 
 					count--;
 					current++;
@@ -140,12 +153,12 @@ namespace Enyim
 
 		uint IUIntHashAlgorithm.ComputeHash(byte[] data)
 		{
-			this.Initialize();
+			Initialize();
 
-			this.HashCore(data, 0, data.Length);
-			this.FinalizeHash();
+			HashCore(data, 0, data.Length);
+			FinalizeHash();
 
-			return this.currentHash;
+			return currentHash;
 		}
 
 		#endregion

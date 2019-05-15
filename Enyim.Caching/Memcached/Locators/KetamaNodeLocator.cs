@@ -48,25 +48,33 @@ namespace Enyim.Caching.Memcached
 		{
 			this.hashName = hashName ?? DefaultHashName;
 
-			if (!hashFactory.TryGetValue(this.hashName, out this.factory))
-				this.factory = () => HashAlgorithm.Create(this.hashName);
+			if (!hashFactory.TryGetValue(this.hashName, out factory))
+			{
+				factory = () => HashAlgorithm.Create(this.hashName);
+			}
 		}
 
 		void IMemcachedNodeLocator.Initialize(IList<IMemcachedNode> nodes)
 		{
 			// quit if we've been initialized because we can handle dead nodes,
 			// so there is no need to recalculate everything
-			if (this.lookupData != null) return;
+			if (this.lookupData != null)
+			{
+				return;
+			}
 
 			// sizeof(uint)
 			const int KeyLength = 4;
-			var hashAlgo = this.factory();
+			var hashAlgo = factory();
 
 			int PartCount = hashAlgo.HashSize / 8 / KeyLength; // HashSize is in bits, uint is 4 bytes long
-			if (PartCount < 1) throw new ArgumentOutOfRangeException("The hash algorithm must provide at least 32 bits long hashes");
+			if (PartCount < 1)
+			{
+				throw new ArgumentOutOfRangeException("The hash algorithm must provide at least 32 bits long hashes");
+			}
 
-			var keys = new List<uint>(nodes.Count * KetamaNodeLocator.ServerAddressMutations);
-			var keyToServer = new Dictionary<uint, IMemcachedNode>(keys.Count, new UIntEqualityComparer());
+			List<uint> keys = new List<uint>(nodes.Count * ServerAddressMutations);
+			Dictionary<uint, IMemcachedNode> keyToServer = new Dictionary<uint, IMemcachedNode>(keys.Count, new UIntEqualityComparer());
 
 			for (int nodeIndex = 0; nodeIndex < nodes.Count; nodeIndex++)
 			{
@@ -85,8 +93,8 @@ namespace Enyim.Caching.Memcached
 
 					for (int p = 0; p < PartCount; p++)
 					{
-						var tmp = p * 4;
-						var key = ((uint)data[tmp + 3] << 24)
+						int tmp = p * 4;
+						uint key = ((uint)data[tmp + 3] << 24)
 									| ((uint)data[tmp + 2] << 16)
 									| ((uint)data[tmp + 1] << 8)
 									| ((uint)data[tmp]);
@@ -99,7 +107,7 @@ namespace Enyim.Caching.Memcached
 
 			keys.Sort();
 
-			var lookupData = new LookupData
+			LookupData lookupData = new LookupData
 			{
 				keys = keys.ToArray(),
 				KeyToServer = keyToServer,
@@ -111,15 +119,15 @@ namespace Enyim.Caching.Memcached
 
 		private uint GetKeyHash(string key)
 		{
-			var hashAlgo = this.factory();
-			var uintHash = hashAlgo as IUIntHashAlgorithm;
+			var hashAlgo = factory();
+			IUIntHashAlgorithm uintHash = hashAlgo as IUIntHashAlgorithm;
 
-			var keyData = Encoding.UTF8.GetBytes(key);
+			byte[] keyData = Encoding.UTF8.GetBytes(key);
 
 			// shortcut for internal hash algorithms
 			if (uintHash == null)
 			{
-				var data = hashAlgo.ComputeHash(keyData);
+				byte[] data = hashAlgo.ComputeHash(keyData);
 
 				return ((uint)data[3] << 24) | ((uint)data[2] << 16) | ((uint)data[1] << 8) | ((uint)data[0]);
 			}
@@ -131,9 +139,12 @@ namespace Enyim.Caching.Memcached
 
 		IMemcachedNode IMemcachedNodeLocator.Locate(string key)
 		{
-			if (key == null) throw new ArgumentNullException("key");
+			if (key == null)
+			{
+				throw new ArgumentNullException("key");
+			}
 
-			var ld = this.lookupData;
+			var ld = lookupData;
 
 			switch (ld.Servers.Length)
 			{
@@ -141,7 +152,7 @@ namespace Enyim.Caching.Memcached
 				case 1: var tmp = ld.Servers[0]; return tmp.IsAlive ? tmp : null;
 			}
 
-			var retval = LocateNode(ld, this.GetKeyHash(key));
+			var retval = LocateNode(ld, GetKeyHash(key));
 
 			// if the result is not alive then try to mutate the item key and 
 			// find another node this way we do not have to reinitialize every 
@@ -149,7 +160,7 @@ namespace Enyim.Caching.Memcached
 			// (DefaultServerPool will resurrect the nodes in the background without affecting the hashring)
 			if (!retval.IsAlive)
 			{
-				for (var i = 0; i < ld.Servers.Length; i++)
+				for (int i = 0; i < ld.Servers.Length; i++)
 				{
 					// -- this is from spymemcached so we select the same node for the same items
 					ulong tmpKey = (ulong)GetKeyHash(i + key);
@@ -159,7 +170,10 @@ namespace Enyim.Caching.Memcached
 
 					retval = LocateNode(ld, (uint)tmpKey);
 
-					if (retval.IsAlive) return retval;
+					if (retval.IsAlive)
+					{
+						return retval;
+					}
 				}
 			}
 
@@ -168,12 +182,14 @@ namespace Enyim.Caching.Memcached
 
 		IEnumerable<IMemcachedNode> IMemcachedNodeLocator.GetWorkingNodes()
 		{
-			var ld = this.lookupData;
+			var ld = lookupData;
 
 			if (ld.Servers == null || ld.Servers.Length == 0)
+			{
 				return Enumerable.Empty<IMemcachedNode>();
+			}
 
-			var retval = new IMemcachedNode[ld.Servers.Length];
+			IMemcachedNode[] retval = new IMemcachedNode[ld.Servers.Length];
 			Array.Copy(ld.Servers, retval, retval.Length);
 
 			return retval;
@@ -203,7 +219,9 @@ namespace Enyim.Caching.Memcached
 			}
 
 			if (foundIndex < 0 || foundIndex > ld.keys.Length)
+			{
 				return null;
+			}
 
 			return ld.KeyToServer[ld.keys[foundIndex]];
 		}
@@ -227,7 +245,7 @@ namespace Enyim.Caching.Memcached
 
 		private static readonly Dictionary<string, Func<HashAlgorithm>> hashFactory = new Dictionary<string, Func<HashAlgorithm>>(StringComparer.OrdinalIgnoreCase)
 		{
-		    { String.Empty, () => MD5.Create() },
+		    { string.Empty, () => MD5.Create() },
 		    { "default", () => MD5.Create() },
 			{ "md5", () => MD5.Create() },
 			{ "sha1", () => SHA1.Create() },

@@ -1,9 +1,5 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyProduct("Enyim.Caching.Log4NetAdapter")]
-[assembly: AssemblyTitle("Enyim.Caching.Log4NetAdapter")]
 [assembly: ComVisible(false)]
 [assembly: Guid("0b1d407e-1abf-4635-a4ec-4b5f2d3a2346")]
 

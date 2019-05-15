@@ -6,30 +6,40 @@ using Enyim.Caching.Memcached;
 
 namespace Enyim.Caching.Configuration
 {
+	/// <summary>
+	///		Summary description for
+	/// </summary>
 	public class SocketPoolConfiguration : ISocketPoolConfiguration
 	{
-		private int minPoolSize = 10;
-		private int maxPoolSize = 20;
-		private TimeSpan connectionTimeout = new TimeSpan(0, 0, 10);
-		private TimeSpan receiveTimeout = new TimeSpan(0, 0, 10);
-		private TimeSpan deadTimeout = new TimeSpan(0, 0, 10);
-		private TimeSpan queueTimeout = new TimeSpan(0, 0, 0, 0, 100);
-		private INodeFailurePolicyFactory policyFactory = new FailImmediatelyPolicyFactory();
-		private TimeSpan keepAliveInterval;
-		private TimeSpan keepAliveStartDelay;
+		private int _minPoolSize = 10;
+		private int _maxPoolSize = 20;
+		private TimeSpan _connectionTimeout = new TimeSpan(0, 0, 10);
+		private TimeSpan _receiveTimeout = new TimeSpan(0, 0, 10);
+		private TimeSpan _deadTimeout = new TimeSpan(0, 0, 10);
+		private TimeSpan _queueTimeout = new TimeSpan(0, 0, 0, 0, 100);
+		private INodeFailurePolicyFactory _policyFactory = new FailImmediatelyPolicyFactory();
+		private TimeSpan _keepAliveInterval;
+		private TimeSpan _keepAliveStartDelay;
 
+		/// <summary>
+		///
+		/// </summary>
 		int ISocketPoolConfiguration.MinPoolSize
 		{
-			get { return this.minPoolSize; }
+			get { return _minPoolSize; }
 			set
 			{
 				if (value < 0)
+				{
 					throw new ArgumentOutOfRangeException("value", "MinPoolSize must be >= 0!");
+				}
 
-				if (value > this.maxPoolSize)
+				if (value > _maxPoolSize)
+				{
 					throw new ArgumentOutOfRangeException("value", "MinPoolSize must be <= MaxPoolSize!");
+				}
 
-				this.minPoolSize = value;
+				_minPoolSize = value;
 			}
 		}
 
@@ -40,97 +50,133 @@ namespace Enyim.Caching.Configuration
 		/// <remarks>It should be 0.75 * (number of threads) for optimal performance.</remarks>
 		int ISocketPoolConfiguration.MaxPoolSize
 		{
-			get { return this.maxPoolSize; }
+			get { return _maxPoolSize; }
 			set
 			{
-				if (value < this.minPoolSize)
+				if (value < _minPoolSize)
+				{
 					throw new ArgumentOutOfRangeException("value", "MaxPoolSize must be >= MinPoolSize!");
+				}
 
-				this.maxPoolSize = value;
+				_maxPoolSize = value;
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		TimeSpan ISocketPoolConfiguration.ConnectionTimeout
 		{
-			get { return this.connectionTimeout; }
+			get { return _connectionTimeout; }
 			set
 			{
 				if (value < TimeSpan.Zero)
+				{
 					throw new ArgumentOutOfRangeException("value", "value must be positive");
+				}
 
-				this.connectionTimeout = value;
+				_connectionTimeout = value;
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		TimeSpan ISocketPoolConfiguration.ReceiveTimeout
 		{
-			get { return this.receiveTimeout; }
+			get { return _receiveTimeout; }
 			set
 			{
 				if (value < TimeSpan.Zero)
+				{
 					throw new ArgumentOutOfRangeException("value", "value must be positive");
+				}
 
-				this.receiveTimeout = value;
+				_receiveTimeout = value;
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		TimeSpan ISocketPoolConfiguration.QueueTimeout
 		{
-			get { return this.queueTimeout; }
+			get { return _queueTimeout; }
 			set
 			{
 				if (value < TimeSpan.Zero)
+				{
 					throw new ArgumentOutOfRangeException("value", "value must be positive");
+				}
 
-				this.queueTimeout = value;
+				_queueTimeout = value;
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		TimeSpan ISocketPoolConfiguration.DeadTimeout
 		{
-			get { return this.deadTimeout; }
+			get { return _deadTimeout; }
 			set
 			{
 				if (value < TimeSpan.Zero)
+				{
 					throw new ArgumentOutOfRangeException("value", "value must be positive");
+				}
 
-				this.deadTimeout = value;
+				_deadTimeout = value;
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		INodeFailurePolicyFactory ISocketPoolConfiguration.FailurePolicyFactory
 		{
-			get { return this.policyFactory; }
+			get
+			{
+				return _policyFactory;
+			}
+
 			set
 			{
-				if (value == null)
-					throw new ArgumentNullException("value");
-
-				this.policyFactory = value;
+				_policyFactory = value ?? throw new ArgumentNullException("value");
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		TimeSpan ISocketPoolConfiguration.KeepAliveInterval
 		{
-			get { return keepAliveInterval; }
+			get { return _keepAliveInterval; }
 			set
 			{
 				if (value < TimeSpan.Zero)
+				{
 					throw new ArgumentOutOfRangeException("value", "value must be positive");
+				}
 
-				this.keepAliveInterval = value;
+				_keepAliveInterval = value;
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		TimeSpan ISocketPoolConfiguration.KeepAliveStartDelay
 		{
-			get { return keepAliveStartDelay; }
+			get { return _keepAliveStartDelay; }
 			set
 			{
 				if (value < TimeSpan.Zero)
+				{
 					throw new ArgumentOutOfRangeException("value", "value must be positive");
+				}
 
-				this.keepAliveStartDelay = value;
+				_keepAliveStartDelay = value;
 			}
 		}
 	}

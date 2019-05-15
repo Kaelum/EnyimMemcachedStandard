@@ -1,37 +1,45 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
+using System.IO;
+using System.Reflection;
+
 using Enyim.Caching.Configuration;
-using Enyim.Caching.Memcached.Results;
 using Enyim.Caching.Memcached;
+using Enyim.Caching.Memcached.Results;
+
+using log4net.Config;
+using log4net.Repository;
+
+using NUnit.Framework;
 
 namespace Enyim.Caching.Tests
 {
 	[TestFixture]
 	public abstract class MemcachedClientTestsBase
 	{
-		private Random random = new Random();
-		protected MemcachedClient _Client;
+		private Random _random = new Random();
+		protected MemcachedClient client;
 
 		[SetUp]
 		public void SetUp()
 		{
-			var config = new MemcachedClientConfiguration();
+			MemcachedClientConfiguration config = new MemcachedClientConfiguration();
 			config.AddServer("127.0.0.1", 11211);
 
-			_Client = new MemcachedClient(config);
+			client = new MemcachedClient(config);
 		}
 
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void FixtureSetUp()
 		{
-			log4net.Config.XmlConfigurator.Configure();
+			ILoggerRepository loggerRepository = log4net.LogManager.GetRepository(Assembly.GetExecutingAssembly());
+			FileInfo configFileInfo = new FileInfo("App.config");
+			XmlConfigurator.Configure(loggerRepository, configFileInfo);
+
 			MemcachedTest.TestSetup.Run();
 		}
 
-		[TestFixtureTearDown]
+		[OneTimeTearDown]
 		public void FixtureTearDown()
 		{
 			MemcachedTest.TestSetup.Cleanup();
@@ -39,15 +47,15 @@ namespace Enyim.Caching.Tests
 
 		protected string GetUniqueKey(string prefix = null)
 		{
-			return (String.IsNullOrEmpty(prefix) ? "" : prefix + "_")
+			return (string.IsNullOrEmpty(prefix) ? "" : prefix + "_")
 					+ "unit_test_"
 					+ DateTime.Now.Ticks
-					+ "_" + random.Next();
+					+ "_" + _random.Next();
 		}
 
 		protected IEnumerable<string> GetUniqueKeys(string prefix = null, int max = 5)
 		{
-			var keys = new List<string>(max);
+			List<string> keys = new List<string>(max);
 
 			for (int i = 0; i < max; i++)
 			{
@@ -59,7 +67,7 @@ namespace Enyim.Caching.Tests
 
 		protected string GetRandomString()
 		{
-			var rand = new Random((int)DateTime.Now.Ticks).Next();
+			int rand = new Random((int)DateTime.Now.Ticks).Next();
 			return "unit_test_value_" + rand;
 		}
 
@@ -74,7 +82,7 @@ namespace Enyim.Caching.Tests
 			{
 				value = GetRandomString();
 			}
-			return _Client.ExecuteStore(mode, key, value);
+			return client.ExecuteStore(mode, key, value);
 		}
 
 		protected void StoreAssertPass(IStoreOperationResult result)

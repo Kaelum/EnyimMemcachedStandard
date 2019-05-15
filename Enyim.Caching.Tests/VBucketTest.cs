@@ -36,9 +36,9 @@ namespace MemcachedTest
 		[TestCase]
 		public void TestBuckets()
 		{
-			var vb = new VBucketNodeLocator("crc", buckets);
+			VBucketNodeLocator vb = new VBucketNodeLocator("crc", buckets);
 
-			var servers = new[] { "127.0.0.1", "127.0.0.2", "127.0.0.3" };
+			string[] servers = new[] { "127.0.0.1", "127.0.0.2", "127.0.0.3" };
 			var nodes = from s in servers
 						let ip = IPAddress.Parse(s)
 						select (IMemcachedNode)new MockNode(new IPEndPoint(ip, 11211));
@@ -48,7 +48,7 @@ namespace MemcachedTest
 			foreach (var kvp in keyToVBucket)
 			{
 				var b = vb.GetVBucket(kvp.Key);
-				var index = Array.IndexOf(buckets, b);
+				int index = Array.IndexOf(buckets, b);
 
 				Assert.IsTrue(index == kvp.Value, "Key '" + kvp.Key + "': expected " + kvp.Value + " but found " + index);
 			}

@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Security.Cryptography;
-using System.Net;
-using System.Web.Script.Serialization;
-using System.Collections.ObjectModel;
-using System.Web;
+using System.Text;
+
 using Enyim.Caching.Configuration;
-using System.Configuration;
-using System.IO;
 
 namespace Enyim.Caching.Memcached
 {
@@ -18,26 +13,35 @@ namespace Enyim.Caching.Memcached
 	/// </summary>
 	public class VBucketNodeLocator : IMemcachedNodeLocator
 	{
-		private VBucket[] buckets;
-		private int mask;
-		private Func<HashAlgorithm> factory;
+		private readonly VBucket[] _buckets;
+		private readonly int _mask;
+		private readonly Func<HashAlgorithm> _factory;
 
 		private VBucketNodeLocator()
 		{
 			throw new InvalidOperationException("You must use the VBucketNodeLocatorFactory in the configuration file to use this locator!");
 		}
 
+		/// <summary>
+		///		VBucketNodeLocator
+		/// </summary>
+		/// <param name="hashAlgorithm"></param>
+		/// <param name="buckets"></param>
 		public VBucketNodeLocator(string hashAlgorithm, VBucket[] buckets)
 		{
-			var log = Math.Log(buckets.Length, 2);
+			double log = Math.Log(buckets.Length, 2);
 			if (log != (int)log)
+			{
 				throw new ArgumentException("bucket count must be a power of 2!");
+			}
 
-			this.buckets = buckets;
-			this.mask = buckets.Length - 1;
+			_buckets = buckets;
+			_mask = buckets.Length - 1;
 
-			if (!hashFactory.TryGetValue(hashAlgorithm, out this.factory))
+			if (!_hashFactory.TryGetValue(hashAlgorithm, out _factory))
+			{
 				throw new ArgumentException("Unknown hash algorithm: " + hashAlgorithm, "hashAlgorithm");
+			}
 		}
 
 		//[ThreadStatic]
@@ -46,7 +50,7 @@ namespace Enyim.Caching.Memcached
 		//private HashAlgorithm GetAlgo()
 		//{
 		//    // we cache the HashAlgorithm instance per thread
-		//    // they are reinitialized before every ComputeHash but we avoid creating then GCing them every time we need 
+		//    // they are reinitialized before every ComputeHash but we avoid creating then GCing them every time we need
 		//    // to find something (which will happen a lot)
 		//    // we cannot use ThreadStatic for asp.net (requests can change threads) so the hasher will be recreated for every request
 		//    // (we could use an object pool but talk about overkill)
@@ -63,49 +67,63 @@ namespace Enyim.Caching.Memcached
 
 		#region [ IMemcachedNodeLocator        ]
 
-		private IMemcachedNode[] nodes;
+		private IMemcachedNode[] _nodes;
 
 		void IMemcachedNodeLocator.Initialize(IList<IMemcachedNode> nodes)
 		{
 			// we do not care about dead nodes
-			if (this.nodes != null) return;
+			if (_nodes != null)
+			{
+				return;
+			}
 
-			this.nodes = nodes.ToArray();
+			_nodes = nodes.ToArray();
 		}
 
 		IMemcachedNode IMemcachedNodeLocator.Locate(string key)
 		{
-			var bucket = this.GetVBucket(key);
+			var bucket = GetVBucket(key);
 
-			return this.nodes[bucket.Master];
+			return _nodes[bucket.Master];
 		}
 
+		/// <summary>
+		///		GetIndex
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
 		public int GetIndex(string key)
 		{
-			var ha = this.factory();
+			var ha = _factory();
 
 			//little shortcut for some hashes; we skip the uint -> byte[] -> uint conversion
-			var iuha = ha as IUIntHashAlgorithm;
-			var keyBytes = Encoding.UTF8.GetBytes(key);
+			byte[] keyBytes = Encoding.UTF8.GetBytes(key);
 
-			uint keyHash = (iuha == null)
-							? BitConverter.ToUInt32(ha.ComputeHash(keyBytes), 0)
-							: iuha.ComputeHash(keyBytes);
+			uint keyHash = (
+				ha is IUIntHashAlgorithm iuha
+				? iuha.ComputeHash(keyBytes)
+				: BitConverter.ToUInt32(ha.ComputeHash(keyBytes), 0)
+			);
 
-			return (int)(keyHash & this.mask);
+			return (int)(keyHash & _mask);
 		}
 
+		/// <summary>
+		///		GetVBucket
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
 		public VBucket GetVBucket(string key)
 		{
 			int index = GetIndex(key);
 
-			return this.buckets[index];
+			return _buckets[index];
 		}
 
 		IEnumerable<IMemcachedNode> IMemcachedNodeLocator.GetWorkingNodes()
 		{
-			var nodes = this.nodes;
-			var retval = new IMemcachedNode[nodes.Length];
+			var nodes = _nodes;
+			IMemcachedNode[] retval = new IMemcachedNode[nodes.Length];
 
 			Array.Copy(nodes, retval, retval.Length);
 
@@ -115,17 +133,17 @@ namespace Enyim.Caching.Memcached
 		#endregion
 		#region [ hashFactory                  ]
 
-		private static readonly Dictionary<string, Func<HashAlgorithm>> hashFactory = new Dictionary<string, Func<HashAlgorithm>>(StringComparer.OrdinalIgnoreCase)
-		        {
-		            { String.Empty, () => new HashkitOneAtATime() },
-		            { "default", () => new HashkitOneAtATime() },
-		            { "crc", () => new HashkitCrc32() },
-		            { "fnv1_32", () => new Enyim.FNV1() },
-		            { "fnv1_64", () => new Enyim.FNV1a() },
-		            { "fnv1a_32", () => new Enyim.FNV64() },
-		            { "fnv1a_64", () => new Enyim.FNV64a() },
-		            { "murmur", () => new HashkitMurmur() }
-		        };
+		private static readonly Dictionary<string, Func<HashAlgorithm>> _hashFactory = new Dictionary<string, Func<HashAlgorithm>>(StringComparer.OrdinalIgnoreCase)
+				{
+					{ string.Empty, () => new HashkitOneAtATime() },
+					{ "default", () => new HashkitOneAtATime() },
+					{ "crc", () => new HashkitCrc32() },
+					{ "fnv1_32", () => new Enyim.FNV1() },
+					{ "fnv1_64", () => new Enyim.FNV1a() },
+					{ "fnv1a_32", () => new Enyim.FNV64() },
+					{ "fnv1a_64", () => new Enyim.FNV64a() },
+					{ "murmur", () => new HashkitMurmur() }
+				};
 
 		#endregion
 	}
@@ -133,20 +151,20 @@ namespace Enyim.Caching.Memcached
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

@@ -1,35 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using NUnit.Framework;
-using Enyim.Caching.Memcached;
-using Enyim.Caching.Configuration;
-using Enyim.Caching;
+using System;
+using System.IO;
+using System.Reflection;
 using System.Threading;
+
+using Enyim.Caching;
+using Enyim.Caching.Configuration;
+using Enyim.Caching.Memcached;
+
+using log4net.Config;
+using log4net.Repository;
+
+using NUnit.Framework;
 
 namespace MemcachedTest
 {
 	[TestFixture]
 	public class FailurePolicyTest
 	{
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void Setup()
 		{
-			log4net.Config.XmlConfigurator.Configure();
+			ILoggerRepository loggerRepository = log4net.LogManager.GetRepository(Assembly.GetExecutingAssembly());
+			FileInfo configFileInfo = new FileInfo("App.config");
+			XmlConfigurator.Configure(loggerRepository, configFileInfo);
 		}
 
 		[TestCase]
 		public void TestIfCalled()
 		{
-			var config = new MemcachedClientConfiguration();
+			MemcachedClientConfiguration config = new MemcachedClientConfiguration();
 			config.AddServer("localhost", 12345);
 
 			config.SocketPool.FailurePolicyFactory = new FakePolicy();
 			config.SocketPool.ConnectionTimeout = TimeSpan.FromSeconds(4);
 			config.SocketPool.ReceiveTimeout = TimeSpan.FromSeconds(6);
 
-			var client = new MemcachedClient(config);
+			MemcachedClient client = new MemcachedClient(config);
 
 			Assert.IsNull(client.Get("a"), "Get should have failed.");
 		}
@@ -52,7 +58,7 @@ namespace MemcachedTest
 		[TestCase]
 		public void TestThrottlingFailurePolicy()
 		{
-			var config = new MemcachedClientConfiguration();
+			MemcachedClientConfiguration config = new MemcachedClientConfiguration();
 			config.AddServer("localhost", 12345);
 
 			config.SocketPool.FailurePolicyFactory = new ThrottlingFailurePolicyFactory(4, TimeSpan.FromMilliseconds(2000));
@@ -61,9 +67,9 @@ namespace MemcachedTest
 			config.SocketPool.MinPoolSize = 1;
 			config.SocketPool.MaxPoolSize = 1;
 
-			var client = new MemcachedClient(config);
-			var canFail = false;
-			var didFail = false;
+			MemcachedClient client = new MemcachedClient(config);
+			bool canFail = false;
+			bool didFail = false;
 
 			client.NodeFailed += node =>
 			{

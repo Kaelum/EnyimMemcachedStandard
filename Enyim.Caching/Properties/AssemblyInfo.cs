@@ -1,13 +1,4 @@
-﻿using System.Reflection;
-using System.Runtime.InteropServices;
-
-[assembly: AssemblyProduct("Enyim.Caching")]
-[assembly: AssemblyTitle("Enyim.Caching")]
-[assembly: ComVisible(false)]
-[assembly: Guid("a8cd3f39-7731-4ee8-a7ce-444d540d4a4d")]
-
-#region [ License information          ]
-/* ************************************************************
+﻿/* ************************************************************
  *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
  *
@@ -24,4 +15,9 @@ using System.Runtime.InteropServices;
  *    limitations under the License.
  *
  * ************************************************************/
-#endregion
+
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+[assembly: ComVisible(false)]
+[assembly: Guid("a8cd3f39-7731-4ee8-a7ce-444d540d4a4d")]

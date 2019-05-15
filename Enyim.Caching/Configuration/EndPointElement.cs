@@ -35,7 +35,7 @@ namespace Enyim.Caching.Configuration
 		/// </summary>
 		public System.Net.IPEndPoint EndPoint
 		{
-			get { return this.endpoint ?? (this.endpoint = ConfigurationHelper.ResolveToEndPoint(this.Address, this.Port)); }
+			get { return endpoint ?? (endpoint = ConfigurationHelper.ResolveToEndPoint(Address, Port)); }
 		}
 
 		#region [ T:IPAddressValidator         ]
@@ -52,13 +52,17 @@ namespace Enyim.Caching.Configuration
 			{
 				string address = value as string;
 
-				if (String.IsNullOrEmpty(address))
+				if (string.IsNullOrEmpty(address))
+				{
 					return;
+				}
 
 				System.Net.IPAddress tmp;
 
 				if (!System.Net.IPAddress.TryParse(address, out tmp))
+				{
 					throw new ConfigurationErrorsException("Invalid address specified: " + address);
+				}
 			}
 		}
 		#endregion

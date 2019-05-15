@@ -16,24 +16,24 @@ namespace Enyim.Caching.Tests
 		[Test]
 		public void When_Storing_Item_With_Valid_Cas_Result_Is_Successful()
 		{
-			var key = GetUniqueKey("cas");
-			var value = GetRandomString();
+			string key = GetUniqueKey("cas");
+			string value = GetRandomString();
 			var storeResult = Store(StoreMode.Add, key, value);
 			StoreAssertPass(storeResult);
 
-			var casResult = _Client.ExecuteCas(StoreMode.Set, key, value, storeResult.Cas);
+			var casResult = client.ExecuteCas(StoreMode.Set, key, value, storeResult.Cas);
 			StoreAssertPass(casResult);
 		}
 
 		[Test]
 		public void When_Storing_Item_With_Invalid_Cas_Result_Is_Not_Successful()
 		{
-			var key = GetUniqueKey("cas");
-			var value = GetRandomString();
+			string key = GetUniqueKey("cas");
+			string value = GetRandomString();
 			var storeResult = Store(StoreMode.Add, key, value);
 			StoreAssertPass(storeResult);
 
-			var casResult = _Client.ExecuteCas(StoreMode.Set, key, value, storeResult.Cas + (2 << 28));
+			var casResult = client.ExecuteCas(StoreMode.Set, key, value, storeResult.Cas + (2 << 28));
 			StoreAssertFail(casResult);
 		}
 

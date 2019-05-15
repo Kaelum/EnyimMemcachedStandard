@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+
 using Enyim.Caching.Configuration;
 
 namespace Enyim.Caching.Memcached
@@ -11,13 +10,13 @@ namespace Enyim.Caching.Memcached
 	/// </summary>
 	public class ThrottlingFailurePolicy : INodeFailurePolicy
 	{
-		private static readonly ILog log = LogManager.GetLogger(typeof(ThrottlingFailurePolicy));
-		private static readonly bool LogIsDebugEnabled = log.IsDebugEnabled;
+		private static readonly ILog _log = LogManager.GetLogger(typeof(ThrottlingFailurePolicy));
+		private static readonly bool _logIsDebugEnabled = _log.IsDebugEnabled;
 
-		private int resetAfter;
-		private int failureThreshold;
-		private DateTime lastFailed;
-		private int failCounter;
+		private readonly int _resetAfter;
+		private readonly int _failureThreshold;
+		private DateTime _lastFailed;
+		private int _failCounter;
 
 		/// <summary>
 		/// Creates a new instance of <see cref="T:ThrottlingFailurePolicy"/>.
@@ -26,46 +25,60 @@ namespace Enyim.Caching.Memcached
 		/// <param name="failureThreshold">Specifies the number of failures that must occur in the specified time window to fail a node.</param>
 		public ThrottlingFailurePolicy(int resetAfter, int failureThreshold)
 		{
-			this.resetAfter = resetAfter;
-			this.failureThreshold = failureThreshold;
+			_resetAfter = resetAfter;
+			_failureThreshold = failureThreshold;
 		}
 
 		bool INodeFailurePolicy.ShouldFail()
 		{
 			var now = DateTime.UtcNow;
 
-			if (lastFailed == DateTime.MinValue)
+			if (_lastFailed == DateTime.MinValue)
 			{
-				if (LogIsDebugEnabled) log.Debug("Setting fail counter to 1.");
+				if (_logIsDebugEnabled)
+				{
+					_log.Debug("Setting fail counter to 1.");
+				}
 
-				failCounter = 1;
+				_failCounter = 1;
 			}
 			else
 			{
-				var diff = (int)(now - lastFailed).TotalMilliseconds;
-				if (LogIsDebugEnabled) log.DebugFormat("Last fail was {0} msec ago with counter {1}.", diff, this.failCounter);
+				int diff = (int)(now - _lastFailed).TotalMilliseconds;
+				if (_logIsDebugEnabled)
+				{
+					_log.DebugFormat("Last fail was {0} msec ago with counter {1}.", diff, _failCounter);
+				}
 
-				if (diff <= this.resetAfter)
-					this.failCounter++;
+				if (diff <= _resetAfter)
+				{
+					_failCounter++;
+				}
 				else
 				{
-					this.failCounter = 1;
+					_failCounter = 1;
 				}
 			}
 
-			lastFailed = now;
+			_lastFailed = now;
 
-			if (this.failCounter == this.failureThreshold)
+			if (_failCounter == _failureThreshold)
 			{
-				if (LogIsDebugEnabled) log.DebugFormat("Threshold reached, node will fail.");
+				if (_logIsDebugEnabled)
+				{
+					_log.DebugFormat("Threshold reached, node will fail.");
+				}
 
-				this.lastFailed = DateTime.MinValue;
-				this.failCounter = 0;
+				_lastFailed = DateTime.MinValue;
+				_failCounter = 0;
 
 				return true;
 			}
 
-			if (LogIsDebugEnabled) log.DebugFormat("Current counter is {0}, threshold not reached.", this.failCounter);
+			if (_logIsDebugEnabled)
+			{
+				_log.DebugFormat("Current counter is {0}, threshold not reached.", _failCounter);
+			}
 
 			return false;
 		}
@@ -76,16 +89,28 @@ namespace Enyim.Caching.Memcached
 	/// </summary>
 	public class ThrottlingFailurePolicyFactory : INodeFailurePolicyFactory, IProviderFactory<INodeFailurePolicyFactory>
 	{
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="failureThreshold"></param>
+		/// <param name="resetAfter"></param>
 		public ThrottlingFailurePolicyFactory(int failureThreshold, TimeSpan resetAfter)
 			: this(failureThreshold, (int)resetAfter.TotalMilliseconds) { }
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="failureThreshold"></param>
+		/// <param name="resetAfter"></param>
 		public ThrottlingFailurePolicyFactory(int failureThreshold, int resetAfter)
 		{
-			this.ResetAfter = resetAfter;
-			this.FailureThreshold = failureThreshold;
+			ResetAfter = resetAfter;
+			FailureThreshold = failureThreshold;
 		}
 
-		// used by the config files
+		/// <summary>
+		///		used by the config files
+		/// </summary>
 		internal ThrottlingFailurePolicyFactory() { }
 
 		/// <summary>
@@ -98,49 +123,68 @@ namespace Enyim.Caching.Memcached
 		/// </summary>
 		public int FailureThreshold { get; private set; }
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="node"></param>
+		/// <returns></returns>
 		INodeFailurePolicy INodeFailurePolicyFactory.Create(IMemcachedNode node)
 		{
-			return new ThrottlingFailurePolicy(this.ResetAfter, this.FailureThreshold);
+			return new ThrottlingFailurePolicy(ResetAfter, FailureThreshold);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <returns></returns>
 		INodeFailurePolicyFactory IProviderFactory<INodeFailurePolicyFactory>.Create()
 		{
-			return new ThrottlingFailurePolicyFactory(this.FailureThreshold, this.ResetAfter);
+			return new ThrottlingFailurePolicyFactory(FailureThreshold, ResetAfter);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="parameters"></param>
 		void IProvider.Initialize(Dictionary<string, string> parameters)
 		{
-			int failureThreshold;
-			ConfigurationHelper.TryGetAndRemove(parameters, "failureThreshold", out failureThreshold, true);
+			ConfigurationHelper.TryGetAndRemove(parameters, "failureThreshold", out int failureThreshold, true);
 
-			if (failureThreshold < 1) throw new InvalidOperationException("failureThreshold must be > 0");
-			this.FailureThreshold = failureThreshold;
+			if (failureThreshold < 1)
+			{
+				throw new InvalidOperationException("failureThreshold must be > 0");
+			}
 
-			TimeSpan reset;
-			ConfigurationHelper.TryGetAndRemove(parameters, "resetAfter", out reset, true);
-			if (reset <= TimeSpan.Zero) throw new InvalidOperationException("resetAfter must be > 0msec");
+			FailureThreshold = failureThreshold;
 
-			this.ResetAfter = (int)reset.TotalMilliseconds;
+			ConfigurationHelper.TryGetAndRemove(parameters, "resetAfter", out TimeSpan reset, true);
+
+			if (reset <= TimeSpan.Zero)
+			{
+				throw new InvalidOperationException("resetAfter must be > 0msec");
+			}
+
+			ResetAfter = (int)reset.TotalMilliseconds;
 		}
 	}
 }
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2011 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

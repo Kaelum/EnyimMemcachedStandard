@@ -18,23 +18,23 @@ namespace Enyim.Caching.Memcached
 		public SlidingBuffer(int chunkSize)
 		{
 			this.chunkSize = chunkSize;
-			this.buffers = new InterlockedQueue<Segment>();
+			buffers = new InterlockedQueue<Segment>();
 		}
 
-		public int Available { get { return this.available; } }
+		public int Available { get { return available; } }
 
 		public int Read(byte[] buffer, int offset, int count)
 		{
-			var read = 0;
+			int read = 0;
 			Segment segment;
 
-			while (read < count && this.buffers.Peek(out segment))
+			while (read < count && buffers.Peek(out segment))
 			{
-				var available = Math.Min(segment.WriteOffset - segment.ReadOffset, count - read);
+				int available = Math.Min(segment.WriteOffset - segment.ReadOffset, count - read);
 
 				if (available > 0)
 				{
-					System.Buffer.BlockCopy(segment.Data, segment.ReadOffset, buffer, offset + read, available);
+					Buffer.BlockCopy(segment.Data, segment.ReadOffset, buffer, offset + read, available);
 
 					read += available;
 					segment.ReadOffset += available;
@@ -45,9 +45,9 @@ namespace Enyim.Caching.Memcached
 				{
 					// we can dispose the current segment if it's not the last 
 					// (which is probably being written by the receiver)
-					if (this.lastSegment != segment)
+					if (lastSegment != segment)
 					{
-						this.buffers.Dequeue(out segment);
+						buffers.Dequeue(out segment);
 						//Debug.Assert(success, "Could peek but could not dequeue?");
 
 						//bufferManager.ReturnBuffer(segment.Data);
@@ -62,16 +62,19 @@ namespace Enyim.Caching.Memcached
 
 		public void Append(byte[] buffer, int offset, int count)
 		{
-			if (buffer == null || buffer.Length == 0 || count == 0) return;
+			if (buffer == null || buffer.Length == 0 || count == 0)
+			{
+				return;
+			}
 
 			// try to append the data to the last segment
 			// if the data is larger than the ChunkSize we copy it and append it as one chunk
 			// if the data does not fit into the last segment we allocate a new
 			// so data is never split (at the price of some wasted bytes)
-			var last = this.lastSegment;
-			var shouldQueue = false;
+			var last = lastSegment;
+			bool shouldQueue = false;
 
-			if (count > this.chunkSize)
+			if (count > chunkSize)
 			{
 				// big data, append it
 				last = new Segment(new byte[count]);// bufferManager.TakeBuffer(count));
@@ -79,19 +82,19 @@ namespace Enyim.Caching.Memcached
 			}
 			else
 			{
-				var remaining = (last == null)
+				int remaining = (last == null)
 								? 0
 								: last.Data.Length - last.WriteOffset;
 
 				// no space, create a new chunk
 				if (remaining < count)
 				{
-					last = new Segment(new byte[this.chunkSize]);//bufferManager.TakeBuffer(this.chunkSize));
+					last = new Segment(new byte[chunkSize]);//bufferManager.TakeBuffer(this.chunkSize));
 					shouldQueue = true;
 				}
 			}
 
-			System.Buffer.BlockCopy(buffer, offset, last.Data, last.WriteOffset, count);
+			Buffer.BlockCopy(buffer, offset, last.Data, last.WriteOffset, count);
 
 			// first we update the lastSegment reference, then we enque the new segment
 			// this way Read can safely dequeue (discard) the last item it processed and 
@@ -99,25 +102,28 @@ namespace Enyim.Caching.Memcached
 			// doing it in reverse would make Read dequeue the current segment (the one we just inserted)
 			if (shouldQueue)
 			{
-				Interlocked.Exchange(ref this.lastSegment, last);
-				this.buffers.Enqueue(last);
+				Interlocked.Exchange(ref lastSegment, last);
+				buffers.Enqueue(last);
 			}
 
 			// advertise that we have more data available for reading
 			// we have to use Interlocked because in the same time the reader
 			// can remove data and will decrease the value of Available
 			Interlocked.Add(ref last.WriteOffset, count);
-			Interlocked.Add(ref this.available, count);
+			Interlocked.Add(ref available, count);
 		}
 
 		public void UnsafeClear()
 		{
 			Segment tmp;
 
-			this.lastSegment = null;
-			while (this.buffers.Dequeue(out tmp)) ;
+			lastSegment = null;
+			while (buffers.Dequeue(out tmp))
+			{
+				;
+			}
 
-			this.available = 0;
+			available = 0;
 		}
 
 		#region [ Segment                      ]
@@ -126,7 +132,7 @@ namespace Enyim.Caching.Memcached
 		{
 			public Segment(byte[] data)
 			{
-				this.Data = data;
+				Data = data;
 			}
 
 			public readonly byte[] Data;

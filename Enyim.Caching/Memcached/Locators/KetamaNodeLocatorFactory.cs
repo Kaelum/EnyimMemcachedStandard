@@ -17,12 +17,12 @@ namespace Enyim.Caching.Memcached
 
 		void IProvider.Initialize(Dictionary<string, string> parameters)
 		{
-			ConfigurationHelper.TryGetAndRemove(parameters, "hashName", out this.hashName, false);
+			ConfigurationHelper.TryGetAndRemove(parameters, "hashName", out hashName, false);
 		}
 
 		IMemcachedNodeLocator IProviderFactory<IMemcachedNodeLocator>.Create()
 		{
-			return new KetamaNodeLocator(this.hashName);
+			return new KetamaNodeLocator(hashName);
 		}
 	}
 }

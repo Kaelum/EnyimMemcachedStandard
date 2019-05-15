@@ -104,10 +104,15 @@ namespace Enyim.Caching.Configuration
 		{
 			base.PostDeserialize();
 
-			if (this.MinPoolSize > this.MaxPoolSize)
+			if (MinPoolSize > MaxPoolSize)
+			{
 				throw new ConfigurationErrorsException("maxPoolSize must be larger than minPoolSize.");
+			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		[ConfigurationProperty("failurePolicyFactory", IsRequired = false)]
 		public ProviderElement<INodeFailurePolicyFactory> FailurePolicyFactory
 		{
@@ -119,55 +124,55 @@ namespace Enyim.Caching.Configuration
 
 		int ISocketPoolConfiguration.MinPoolSize
 		{
-			get { return this.MinPoolSize; }
-			set { this.MinPoolSize = value; }
+			get { return MinPoolSize; }
+			set { MinPoolSize = value; }
 		}
 
 		int ISocketPoolConfiguration.MaxPoolSize
 		{
-			get { return this.MaxPoolSize; }
-			set { this.MaxPoolSize = value; }
+			get { return MaxPoolSize; }
+			set { MaxPoolSize = value; }
 		}
 
 		TimeSpan ISocketPoolConfiguration.ConnectionTimeout
 		{
-			get { return this.ConnectionTimeout; }
-			set { this.ConnectionTimeout = value; }
+			get { return ConnectionTimeout; }
+			set { ConnectionTimeout = value; }
 		}
 
 		TimeSpan ISocketPoolConfiguration.DeadTimeout
 		{
-			get { return this.DeadTimeout; }
-			set { this.DeadTimeout = value; }
+			get { return DeadTimeout; }
+			set { DeadTimeout = value; }
 		}
 
 		TimeSpan ISocketPoolConfiguration.QueueTimeout
 		{
-			get { return this.QueueTimeout; }
-			set { this.QueueTimeout = value; }
+			get { return QueueTimeout; }
+			set { QueueTimeout = value; }
 		}
 
 		TimeSpan ISocketPoolConfiguration.ReceiveTimeout
 		{
-			get { return this.ReceiveTimeout; }
-			set { this.ReceiveTimeout = value; }
+			get { return ReceiveTimeout; }
+			set { ReceiveTimeout = value; }
 		}
 
 		TimeSpan ISocketPoolConfiguration.KeepAliveStartDelay
 		{
-			get { return this.KeepAliveStartDelay; }
-			set { this.KeepAliveStartDelay = value; }
+			get { return KeepAliveStartDelay; }
+			set { KeepAliveStartDelay = value; }
 		}
 
 		TimeSpan ISocketPoolConfiguration.KeepAliveInterval
 		{
-			get { return this.KeepAliveInterval; }
-			set { this.KeepAliveInterval = value; }
+			get { return KeepAliveInterval; }
+			set { KeepAliveInterval = value; }
 		}
 
 		INodeFailurePolicyFactory ISocketPoolConfiguration.FailurePolicyFactory
 		{
-			get { return this.FailurePolicyFactory.CreateInstance() ?? new FailImmediatelyPolicyFactory(); }
+			get { return FailurePolicyFactory.CreateInstance() ?? new FailImmediatelyPolicyFactory(); }
 			set { }
 		}
 

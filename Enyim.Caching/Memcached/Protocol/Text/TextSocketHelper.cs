@@ -7,14 +7,15 @@ namespace Enyim.Caching.Memcached.Protocol.Text
 {
 	internal static class TextSocketHelper
 	{
-		private const string GenericErrorResponse = "ERROR";
-		private const string ClientErrorResponse = "CLIENT_ERROR ";
-		private const string ServerErrorResponse = "SERVER_ERROR ";
-		private const int ErrorResponseLength = 13;
+		private const string _genericErrorResponse = "ERROR";
+		private const string _clientErrorResponse = "CLIENT_ERROR ";
+		private const string _serverErrorResponse = "SERVER_ERROR ";
+		private const int _errorResponseLength = 13;
 
+		/// <summary></summary>
 		public const string CommandTerminator = "\r\n";
 
-		private static readonly Enyim.Caching.ILog log = Enyim.Caching.LogManager.GetLogger(typeof(TextSocketHelper));
+		private static readonly Enyim.Caching.ILog _log = LogManager.GetLogger(typeof(TextSocketHelper));
 
 		/// <summary>
 		/// Reads the response of the server.
@@ -25,26 +26,32 @@ namespace Enyim.Caching.Memcached.Protocol.Text
 		/// <exception cref="T:Enyim.Caching.Memcached.MemcachedClientException">The server did not recognize the request sent by the client. The Message of the exception is the message returned by the server.</exception>
 		public static string ReadResponse(PooledSocket socket)
 		{
-			string response = TextSocketHelper.ReadLine(socket);
+			string response = ReadLine(socket);
 
-			if (log.IsDebugEnabled)
-				log.Debug("Received response: " + response);
-
-			if (String.IsNullOrEmpty(response))
-				throw new MemcachedClientException("Empty response received.");
-
-			if (String.Compare(response, GenericErrorResponse, StringComparison.Ordinal) == 0)
-				throw new NotSupportedException("Operation is not supported by the server or the request was malformed. If the latter please report the bug to the developers.");
-
-			if (response.Length >= ErrorResponseLength)
+			if (_log.IsDebugEnabled)
 			{
-				if (String.Compare(response, 0, ClientErrorResponse, 0, ErrorResponseLength, StringComparison.Ordinal) == 0)
+				_log.Debug("Received response: " + response);
+			}
+
+			if (string.IsNullOrEmpty(response))
+			{
+				throw new MemcachedClientException("Empty response received.");
+			}
+
+			if (string.Compare(response, _genericErrorResponse, StringComparison.Ordinal) == 0)
+			{
+				throw new NotSupportedException("Operation is not supported by the server or the request was malformed. If the latter please report the bug to the developers.");
+			}
+
+			if (response.Length >= _errorResponseLength)
+			{
+				if (string.Compare(response, 0, _clientErrorResponse, 0, _errorResponseLength, StringComparison.Ordinal) == 0)
 				{
-					throw new MemcachedClientException(response.Remove(0, ErrorResponseLength));
+					throw new MemcachedClientException(response.Remove(0, _errorResponseLength));
 				}
-				else if (String.Compare(response, 0, ServerErrorResponse, 0, ErrorResponseLength, StringComparison.Ordinal) == 0)
+				else if (string.Compare(response, 0, _serverErrorResponse, 0, _errorResponseLength, StringComparison.Ordinal) == 0)
 				{
-					throw new MemcachedException(response.Remove(0, ErrorResponseLength));
+					throw new MemcachedException(response.Remove(0, _errorResponseLength));
 				}
 			}
 
@@ -78,7 +85,9 @@ namespace Enyim.Caching.Memcached.Protocol.Text
 				if (gotR)
 				{
 					if (data == 10)
+					{
 						break;
+					}
 
 					ms.WriteByte(13);
 
@@ -90,8 +99,10 @@ namespace Enyim.Caching.Memcached.Protocol.Text
 
 			string retval = Encoding.ASCII.GetString(ms.GetBuffer(), 0, (int)ms.Length);
 
-			if (log.IsDebugEnabled)
-				log.Debug("ReadLine: " + retval);
+			if (_log.IsDebugEnabled)
+			{
+				_log.Debug("ReadLine: " + retval);
+			}
 
 			return retval;
 		}
@@ -106,14 +117,14 @@ namespace Enyim.Caching.Memcached.Protocol.Text
 		/// and use the <see cref="M:Enyim.Caching.Memcached.PooledSocket.Write(IList&lt;ArraySegment&lt;byte&gt;&gt;)"/> to send the command and the additional buffers in one transaction.</remarks>
 		public unsafe static IList<ArraySegment<byte>> GetCommandBuffer(string value)
 		{
-			var data = new ArraySegment<byte>(Encoding.ASCII.GetBytes(value));
+			ArraySegment<byte> data = new ArraySegment<byte>(Encoding.ASCII.GetBytes(value));
 
 			return new ArraySegment<byte>[] { data };
 		}
 
 		public unsafe static IList<ArraySegment<byte>> GetCommandBuffer(string value, IList<ArraySegment<byte>> list)
 		{
-			var data = new ArraySegment<byte>(Encoding.ASCII.GetBytes(value));
+			ArraySegment<byte> data = new ArraySegment<byte>(Encoding.ASCII.GetBytes(value));
 
 			list.Add(data);
 
@@ -125,20 +136,20 @@ namespace Enyim.Caching.Memcached.Protocol.Text
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

@@ -27,8 +27,8 @@ namespace Enyim.Caching.Memcached
 		/// </summary>
 		public ArraySegment<byte> Data
 		{
-			get { return this.data; }
-			set { this.data = value; }
+			get { return data; }
+			set { data = value; }
 		}
 
 		/// <summary>
@@ -36,8 +36,8 @@ namespace Enyim.Caching.Memcached
 		/// </summary>
 		public uint Flags
 		{
-			get { return this.flags; }
-			set { this.flags = value; }
+			get { return flags; }
+			set { flags = value; }
 		}
 	}
 }

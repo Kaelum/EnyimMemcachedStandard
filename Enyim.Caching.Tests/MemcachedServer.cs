@@ -14,10 +14,10 @@ namespace MemcachedTest
 
 		public static IDisposable Run(int port = 11211, bool verbose = false, int maxMem = 512, bool hidden = true)
 		{
-			var args = $"-E default_engine.so -p {port} -m {maxMem}";
+			string args = $"-E default_engine.so -p {port} -m {maxMem}";
 			if (verbose) args += " -vv";
 
-			var process = Process.Start(new ProcessStartInfo
+			Process process = Process.Start(new ProcessStartInfo
 			{
 				Arguments = args,
 				FileName = ExePath,

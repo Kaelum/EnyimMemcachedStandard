@@ -28,10 +28,10 @@ namespace Enyim
 		/// </summary>
 		public TigerHash()
 		{
-			this.internalDataBuffer = new byte[BLOCKSIZE];
-			this.HashSizeValue = 3 * 8 * 8;
+			internalDataBuffer = new byte[BLOCKSIZE];
+			HashSizeValue = 3 * 8 * 8;
 
-			this.Initialize();
+			Initialize();
 		}
 
 		/// <summary>
@@ -39,12 +39,12 @@ namespace Enyim
 		/// </summary>
 		public override void Initialize()
 		{
-			this.a = 0x123456789ABCDEF;
-			this.b = 0xFEDCBA9876543210;
-			this.c = 0xF096A5B4C3B2E187;
+			a = 0x123456789ABCDEF;
+			b = 0xFEDCBA9876543210;
+			c = 0xF096A5B4C3B2E187;
 
-			this.bufferPosition = 0;
-			this.totalLength = 0;
+			bufferPosition = 0;
+			totalLength = 0;
 		}
 
 
@@ -54,11 +54,11 @@ namespace Enyim
 		/// <param name="cbSize">The number of bytes in the array to use as data. </param>
 		protected override void HashCore(byte[] array, int ibStart, int cbSize)
 		{
-			this.totalLength += cbSize;
+			totalLength += cbSize;
 
-			byte[] buffer = this.internalDataBuffer;
+			byte[] buffer = internalDataBuffer;
 
-			int offset = this.bufferPosition;
+			int offset = bufferPosition;
 			int end = ibStart + cbSize;
 
 			while (ibStart < end)
@@ -77,14 +77,16 @@ namespace Enyim
 				cbSize -= count;
 
 				if (BLOCKSIZE > offset)
+				{
 					break;
+				}
 
-				this.ProcessBlock();
+				ProcessBlock();
 
 				offset = 0;
 			}
 
-			this.bufferPosition = offset;
+			bufferPosition = offset;
 		}
 
 		/// <summary>
@@ -93,8 +95,8 @@ namespace Enyim
 		/// <returns>The computed hash code.</returns>
 		protected override byte[] HashFinal()
 		{
-			int bufferOffset = this.bufferPosition;
-			byte[] buffer = this.internalDataBuffer;
+			int bufferOffset = bufferPosition;
+			byte[] buffer = internalDataBuffer;
 
 			buffer[bufferOffset] = 1;
 			bufferOffset += 1;
@@ -103,21 +105,21 @@ namespace Enyim
 			{
 				Array.Clear(buffer, bufferOffset, BLOCKSIZE - bufferOffset);
 
-				this.ProcessBlock();
+				ProcessBlock();
 				bufferOffset = 0;
 			}
 
 			Array.Clear(buffer, bufferOffset, BLOCKSIZE - bufferOffset - 8);
 
-			TigerHash.LongToBytes(((ulong)this.totalLength) << 3, buffer, BLOCKSIZE - 8);
+			LongToBytes(((ulong)totalLength) << 3, buffer, BLOCKSIZE - 8);
 
-			this.ProcessBlock();
+			ProcessBlock();
 
 			byte[] retval = new byte[24];
 
-			TigerHash.LongToBytes(this.a, retval, 0);
-			TigerHash.LongToBytes(this.b, retval, 8);
-			TigerHash.LongToBytes(this.c, retval, 16);
+			LongToBytes(a, retval, 0);
+			LongToBytes(b, retval, 8);
+			LongToBytes(c, retval, 16);
 
 			return retval;
 		}
@@ -145,9 +147,9 @@ namespace Enyim
 			//}
 			#endregion
 
-			Buffer.BlockCopy(this.internalDataBuffer, 0, this.block, 0, BLOCKSIZE);
+			Buffer.BlockCopy(internalDataBuffer, 0, block, 0, BLOCKSIZE);
 
-			this.Compress();
+			Compress();
 		}
 
 		private void Compress()
@@ -155,46 +157,46 @@ namespace Enyim
 			ulong aa, bb, cc;
 			ulong[] tmpBlock;
 
-			aa = this.a;
-			bb = this.b;
-			cc = this.c;
+			aa = a;
+			bb = b;
+			cc = c;
 
-			tmpBlock = this.block;
+			tmpBlock = block;
 
-			this.RoundABC(tmpBlock[0], 5);
-			this.RoundBCA(tmpBlock[1], 5);
-			this.RoundCAB(tmpBlock[2], 5);
-			this.RoundABC(tmpBlock[3], 5);
-			this.RoundBCA(tmpBlock[4], 5);
-			this.RoundCAB(tmpBlock[5], 5);
-			this.RoundABC(tmpBlock[6], 5);
-			this.RoundBCA(tmpBlock[7], 5);
+			RoundABC(tmpBlock[0], 5);
+			RoundBCA(tmpBlock[1], 5);
+			RoundCAB(tmpBlock[2], 5);
+			RoundABC(tmpBlock[3], 5);
+			RoundBCA(tmpBlock[4], 5);
+			RoundCAB(tmpBlock[5], 5);
+			RoundABC(tmpBlock[6], 5);
+			RoundBCA(tmpBlock[7], 5);
 
-			TigerHash.Schedule(tmpBlock);
+			Schedule(tmpBlock);
 
-			this.RoundCAB(tmpBlock[0], 7);
-			this.RoundABC(tmpBlock[1], 7);
-			this.RoundBCA(tmpBlock[2], 7);
-			this.RoundCAB(tmpBlock[3], 7);
-			this.RoundABC(tmpBlock[4], 7);
-			this.RoundBCA(tmpBlock[5], 7);
-			this.RoundCAB(tmpBlock[6], 7);
-			this.RoundABC(tmpBlock[7], 7);
+			RoundCAB(tmpBlock[0], 7);
+			RoundABC(tmpBlock[1], 7);
+			RoundBCA(tmpBlock[2], 7);
+			RoundCAB(tmpBlock[3], 7);
+			RoundABC(tmpBlock[4], 7);
+			RoundBCA(tmpBlock[5], 7);
+			RoundCAB(tmpBlock[6], 7);
+			RoundABC(tmpBlock[7], 7);
 
-			TigerHash.Schedule(tmpBlock);
+			Schedule(tmpBlock);
 
-			this.RoundBCA(tmpBlock[0], 9);
-			this.RoundCAB(tmpBlock[1], 9);
-			this.RoundABC(tmpBlock[2], 9);
-			this.RoundBCA(tmpBlock[3], 9);
-			this.RoundCAB(tmpBlock[4], 9);
-			this.RoundABC(tmpBlock[5], 9);
-			this.RoundBCA(tmpBlock[6], 9);
-			this.RoundCAB(tmpBlock[7], 9);
+			RoundBCA(tmpBlock[0], 9);
+			RoundCAB(tmpBlock[1], 9);
+			RoundABC(tmpBlock[2], 9);
+			RoundBCA(tmpBlock[3], 9);
+			RoundCAB(tmpBlock[4], 9);
+			RoundABC(tmpBlock[5], 9);
+			RoundBCA(tmpBlock[6], 9);
+			RoundCAB(tmpBlock[7], 9);
 
-			this.a = this.a ^ aa;
-			this.b -= bb;
-			this.c += cc;
+			a = a ^ aa;
+			b -= bb;
+			c += cc;
 		}
 
 		private static void Schedule(ulong[] x)
@@ -221,46 +223,46 @@ namespace Enyim
 		{
 			ulong[] T = TigerHash.T;
 
-			ulong tmpC = this.c ^ x;
+			ulong tmpC = c ^ x;
 			int ch = (int)(tmpC >> 32);
 			int cl = (int)(tmpC);
 
-			this.a -= T[cl & 0xFF] ^ T[((cl >> 16) & 0xFF) + 0x100] ^ T[(ch & 0xFF) + 0x200] ^ T[((ch >> 16) & 0xFF) + 0x300];
-			this.b += T[((cl >> 8) & 0xFF) + 0x300] ^ T[((cl >> 24) & 0xFF) + 0x200] ^ T[((ch >> 8) & 0xFF) + 0x100] ^ T[(ch >> 24) & 0xFF];
+			a -= T[cl & 0xFF] ^ T[((cl >> 16) & 0xFF) + 0x100] ^ T[(ch & 0xFF) + 0x200] ^ T[((ch >> 16) & 0xFF) + 0x300];
+			b += T[((cl >> 8) & 0xFF) + 0x300] ^ T[((cl >> 24) & 0xFF) + 0x200] ^ T[((ch >> 8) & 0xFF) + 0x100] ^ T[(ch >> 24) & 0xFF];
 
-			this.b *= mul;
+			b *= mul;
 
-			this.c = tmpC;
+			c = tmpC;
 		}
 
 		private void RoundBCA(ulong x, uint mul)
 		{
 			ulong[] T = TigerHash.T;
 
-			ulong tmpA = this.a ^ x;
+			ulong tmpA = a ^ x;
 			int ah = (int)(tmpA >> 32);
 			int al = (int)(tmpA);
 
-			this.b -= T[al & 0xFF] ^ T[((al >> 16) & 0xFF) + 0x100] ^ T[(ah & 0xFF) + 0x200] ^ T[((ah >> 16) & 0xFF) + 0x300];
-			this.c += T[((al >> 8) & 0xFF) + 0x300] ^ T[((al >> 24) & 0xFF) + 0x200] ^ T[((ah >> 8) & 0xFF) + 0x100] ^ T[(ah >> 24) & 0xFF];
-			this.c *= mul;
+			b -= T[al & 0xFF] ^ T[((al >> 16) & 0xFF) + 0x100] ^ T[(ah & 0xFF) + 0x200] ^ T[((ah >> 16) & 0xFF) + 0x300];
+			c += T[((al >> 8) & 0xFF) + 0x300] ^ T[((al >> 24) & 0xFF) + 0x200] ^ T[((ah >> 8) & 0xFF) + 0x100] ^ T[(ah >> 24) & 0xFF];
+			c *= mul;
 
-			this.a = tmpA;
+			a = tmpA;
 		}
 
 		private void RoundCAB(ulong x, uint mul)
 		{
 			ulong[] T = TigerHash.T;
 
-			ulong tmpB = this.b ^ x;
+			ulong tmpB = b ^ x;
 			int bh = (int)(tmpB >> 32);
 			int bl = (int)(tmpB);
 
-			this.c -= T[bl & 0xFF] ^ T[((bl >> 16) & 0xFF) + 0x100] ^ T[(bh & 0xFF) + 0x200] ^ T[((bh >> 16) & 0xFF) + 0x300];
-			this.a += T[((bl >> 8) & 0xFF) + 0x300] ^ T[((bl >> 24) & 0xFF) + 0x200] ^ T[((bh >> 8) & 0xFF) + 0x100] ^ T[(bh >> 24) & 0xFF];
-			this.a *= mul;
+			c -= T[bl & 0xFF] ^ T[((bl >> 16) & 0xFF) + 0x100] ^ T[(bh & 0xFF) + 0x200] ^ T[((bh >> 16) & 0xFF) + 0x300];
+			a += T[((bl >> 8) & 0xFF) + 0x300] ^ T[((bl >> 24) & 0xFF) + 0x200] ^ T[((bh >> 8) & 0xFF) + 0x100] ^ T[(bh >> 24) & 0xFF];
+			a *= mul;
 
-			this.b = tmpB;
+			b = tmpB;
 		}
 
 		private static unsafe void LongToBytes(ulong value, byte[] buffer, int offset)

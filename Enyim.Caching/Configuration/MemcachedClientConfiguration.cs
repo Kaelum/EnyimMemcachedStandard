@@ -13,20 +13,20 @@ namespace Enyim.Caching.Configuration
 	public class MemcachedClientConfiguration : IMemcachedClientConfiguration
 	{
 		// these are lazy initialized in the getters
-		private Type nodeLocator;
-		private ITranscoder transcoder;
-		private IMemcachedKeyTransformer keyTransformer;
+		private Type _nodeLocator;
+		private ITranscoder _transcoder;
+		private IMemcachedKeyTransformer _keyTransformer;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:MemcachedClientConfiguration"/> class.
 		/// </summary>
 		public MemcachedClientConfiguration()
 		{
-			this.Servers = new List<IPEndPoint>();
-			this.SocketPool = new SocketPoolConfiguration();
-			this.Authentication = new AuthenticationConfiguration();
+			Servers = new List<IPEndPoint>();
+			SocketPool = new SocketPoolConfiguration();
+			Authentication = new AuthenticationConfiguration();
 
-			this.Protocol = MemcachedProtocol.Binary;
+			Protocol = MemcachedProtocol.Binary;
 		}
 
 		/// <summary>
@@ -35,17 +35,17 @@ namespace Enyim.Caching.Configuration
 		/// <param name="address">The address and the port of the server in the format 'host:port'.</param>
 		public void AddServer(string address)
 		{
-			this.Servers.Add(ConfigurationHelper.ResolveToEndPoint(address));
+			Servers.Add(ConfigurationHelper.ResolveToEndPoint(address));
 		}
 
 		/// <summary>
 		/// Adds a new server to the pool.
 		/// </summary>
-		/// <param name="address">The host name or IP address of the server.</param>
+		/// <param name="host">The host name or IP address of the server.</param>
 		/// <param name="port">The port number of the memcached instance.</param>
 		public void AddServer(string host, int port)
 		{
-			this.Servers.Add(ConfigurationHelper.ResolveToEndPoint(host, port));
+			Servers.Add(ConfigurationHelper.ResolveToEndPoint(host, port));
 		}
 
 		/// <summary>
@@ -68,8 +68,8 @@ namespace Enyim.Caching.Configuration
 		/// </summary>
 		public IMemcachedKeyTransformer KeyTransformer
 		{
-			get { return this.keyTransformer ?? (this.keyTransformer = new DefaultKeyTransformer()); }
-			set { this.keyTransformer = value; }
+			get { return _keyTransformer ?? (_keyTransformer = new DefaultKeyTransformer()); }
+			set { _keyTransformer = value; }
 		}
 
 		/// <summary>
@@ -78,11 +78,11 @@ namespace Enyim.Caching.Configuration
 		/// <remarks>If both <see cref="M:NodeLocator"/> and  <see cref="M:NodeLocatorFactory"/> are assigned then the latter takes precedence.</remarks>
 		public Type NodeLocator
 		{
-			get { return this.nodeLocator; }
+			get { return _nodeLocator; }
 			set
 			{
 				ConfigurationHelper.CheckForInterface(value, typeof(IMemcachedNodeLocator));
-				this.nodeLocator = value;
+				_nodeLocator = value;
 			}
 		}
 
@@ -97,14 +97,9 @@ namespace Enyim.Caching.Configuration
 		/// </summary>
 		public ITranscoder Transcoder
 		{
-			get { return this.transcoder ?? (this.transcoder = new DefaultTranscoder()); }
-			set { this.transcoder = value; }
+			get { return _transcoder ?? (_transcoder = new DefaultTranscoder()); }
+			set { _transcoder = value; }
 		}
-
-		/// <summary>
-		/// Gets or sets the <see cref="T:Enyim.Caching.Memcached.IPerformanceMonitor"/> instance which will be used monitor the performance of the client.
-		/// </summary>
-		public IPerformanceMonitor PerformanceMonitor { get; set; }
 
 		/// <summary>
 		/// Gets or sets the type of the communication between client and server.
@@ -115,53 +110,51 @@ namespace Enyim.Caching.Configuration
 
 		IList<System.Net.IPEndPoint> IMemcachedClientConfiguration.Servers
 		{
-			get { return this.Servers; }
+			get { return Servers; }
 		}
 
 		ISocketPoolConfiguration IMemcachedClientConfiguration.SocketPool
 		{
-			get { return this.SocketPool; }
+			get { return SocketPool; }
 		}
 
 		IAuthenticationConfiguration IMemcachedClientConfiguration.Authentication
 		{
-			get { return this.Authentication; }
+			get { return Authentication; }
 		}
 
 		IMemcachedKeyTransformer IMemcachedClientConfiguration.CreateKeyTransformer()
 		{
-			return this.KeyTransformer;
+			return KeyTransformer;
 		}
 
 		IMemcachedNodeLocator IMemcachedClientConfiguration.CreateNodeLocator()
 		{
-			var f = this.NodeLocatorFactory;
-			if (f != null) return f.Create();
+			var f = NodeLocatorFactory;
+			if (f != null)
+			{
+				return f.Create();
+			}
 
-			return this.NodeLocator == null
+			return NodeLocator == null
 					? new DefaultNodeLocator()
-					: (IMemcachedNodeLocator)FastActivator.Create(this.NodeLocator);
+					: (IMemcachedNodeLocator)FastActivator.Create(NodeLocator);
 		}
 
 		ITranscoder IMemcachedClientConfiguration.CreateTranscoder()
 		{
-			return this.Transcoder;
+			return Transcoder;
 		}
 
 		IServerPool IMemcachedClientConfiguration.CreatePool()
 		{
-			switch (this.Protocol)
+			switch (Protocol)
 			{
 				case MemcachedProtocol.Text: return new DefaultServerPool(this, new Memcached.Protocol.Text.TextOperationFactory());
 				case MemcachedProtocol.Binary: return new BinaryPool(this);
 			}
 
-			throw new ArgumentOutOfRangeException("Unknown protocol: " + (int)this.Protocol);
-		}
-
-		IPerformanceMonitor IMemcachedClientConfiguration.CreatePerformanceMonitor()
-		{
-			return this.PerformanceMonitor;
+			throw new ArgumentOutOfRangeException("Unknown protocol: " + (int)Protocol);
 		}
 
 		#endregion
@@ -170,20 +163,20 @@ namespace Enyim.Caching.Configuration
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

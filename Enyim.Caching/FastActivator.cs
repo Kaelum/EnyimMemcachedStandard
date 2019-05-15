@@ -37,11 +37,15 @@ namespace Enyim.Reflection
 			Func<object> f;
 
 			if (!factoryCache.TryGetValue(type, out f))
+			{
 				lock (factoryCache)
+				{
 					if (!factoryCache.TryGetValue(type, out f))
 					{
 						factoryCache[type] = f = Expression.Lambda<Func<object>>(Expression.New(type)).Compile();
 					}
+				}
+			}
 
 			return f();
 		}

@@ -14,7 +14,7 @@ namespace Enyim
 	{
 		public HashkitMurmur()
 		{
-			this.HashSizeValue = 32;
+			HashSizeValue = 32;
 		}
 
 		public override bool CanTransformMultipleBlocks
@@ -26,16 +26,27 @@ namespace Enyim
 
 		protected override void HashCore(byte[] array, int ibStart, int cbSize)
 		{
-			if (array == null) throw new ArgumentNullException("array");
-			if (ibStart < 0 || ibStart > array.Length) throw new ArgumentOutOfRangeException("ibStart");
-			if (ibStart + cbSize > array.Length) throw new ArgumentOutOfRangeException("cbSize");
+			if (array == null)
+			{
+				throw new ArgumentNullException("array");
+			}
 
-			this.CurrentHash = HashkitMurmur.UnsafeHashCore(array, ibStart, cbSize);
+			if (ibStart < 0 || ibStart > array.Length)
+			{
+				throw new ArgumentOutOfRangeException("ibStart");
+			}
+
+			if (ibStart + cbSize > array.Length)
+			{
+				throw new ArgumentOutOfRangeException("cbSize");
+			}
+
+			CurrentHash = UnsafeHashCore(array, ibStart, cbSize);
 		}
 
 		protected override byte[] HashFinal()
 		{
-			return BitConverter.GetBytes(this.CurrentHash);
+			return BitConverter.GetBytes(CurrentHash);
 		}
 
 		public uint CurrentHash { get; private set; }
@@ -83,13 +94,13 @@ namespace Enyim
 						// ABC --> CBA; (UInt16)(AB) --> BA
 						//h ^= (uint)(*ptrByte);
 						//h ^= (uint)(ptrByte[1] << 8);
-						hash ^= (*(UInt16*)ptrUInt);
+						hash ^= (*(ushort*)ptrUInt);
 						hash ^= (uint)(((byte*)ptrUInt)[2] << 16);
 						hash *= M;
 						break;
 
 					case 2:
-						hash ^= (*(UInt16*)ptrUInt);
+						hash ^= (*(ushort*)ptrUInt);
 						hash *= M;
 						break;
 
@@ -111,11 +122,11 @@ namespace Enyim
 
 		uint IUIntHashAlgorithm.ComputeHash(byte[] data)
 		{
-			this.Initialize();
+			Initialize();
 
-			this.HashCore(data, 0, data.Length);
+			HashCore(data, 0, data.Length);
 
-			return this.CurrentHash;
+			return CurrentHash;
 		}
 
 		#endregion

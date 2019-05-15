@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
-using System.Collections.Generic;
+
 using Enyim.Caching.Memcached;
 using Enyim.Reflection;
-using System.Xml.Linq;
 
 namespace Enyim.Caching.Configuration
 {
@@ -16,8 +16,8 @@ namespace Enyim.Caching.Configuration
 		where T : class
 	{
 		// TODO make this element play nice with the configuration system (allow saving, etc.)
-		private Dictionary<string, string> parameters = new Dictionary<string, string>();
-		private IProviderFactory<T> factoryInstance;
+		private readonly Dictionary<string, string> _parameters = new Dictionary<string, string>();
+		private IProviderFactory<T> _factoryInstance;
 
 		/// <summary>
 		/// Gets or sets the type of the provider.
@@ -48,12 +48,18 @@ namespace Enyim.Caching.Configuration
 			}
 		}
 
+		/// <summary>
+		///		Summary description for
+		/// </summary>
+		/// <param name="name"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
 		protected override bool OnDeserializeUnrecognizedAttribute(string name, string value)
 		{
 			ConfigurationProperty property = new ConfigurationProperty(name, typeof(string), value);
 			base[property] = value;
 
-			this.parameters[name] = value;
+			_parameters[name] = value;
 
 			return true;
 		}
@@ -65,39 +71,44 @@ namespace Enyim.Caching.Configuration
 		public T CreateInstance()
 		{
 			//check if we have a factory
-			if (this.factoryInstance == null)
+			if (_factoryInstance == null)
 			{
-				var type = this.Factory;
+				var type = Factory;
 				if (type != null)
 				{
 					try
 					{
-						var instance = (IProviderFactory<T>)FastActivator.Create(type);
-						instance.Initialize(this.parameters);
+						IProviderFactory<T> instance = (IProviderFactory<T>)FastActivator.Create(type);
+						instance.Initialize(_parameters);
 
-						this.factoryInstance = instance;
+						_factoryInstance = instance;
 					}
 					catch (Exception e)
 					{
-						throw new InvalidOperationException(String.Format("Could not initialize the provider factory {0}. Check the InnerException for details.", type), e);
+						throw new InvalidOperationException(string.Format("Could not initialize the provider factory {0}. Check the InnerException for details.", type), e);
 					}
 				}
 			}
 
 			// no factory, use the provider type
-			if (this.factoryInstance == null)
+			if (_factoryInstance == null)
 			{
-				var type = this.Type;
+				var type = Type;
 
 				if (type == null)
+				{
 					return null;
+				}
 
 				return (T)FastActivator.Create(type);
 			}
 
-			return factoryInstance.Create();
+			return _factoryInstance.Create();
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		[ConfigurationProperty("data", IsRequired = false)]
 		public TextElement Content
 		{
@@ -105,13 +116,18 @@ namespace Enyim.Caching.Configuration
 			set { base["data"] = value; }
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		protected override void PostDeserialize()
 		{
 			base.PostDeserialize();
 
-			var c = this.Content;
+			var c = Content;
 			if (c != null)
-				this.parameters[String.Empty] = c.Content;
+			{
+				_parameters[string.Empty] = c.Content;
+			}
 		}
 	}
 }

@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Company>Amazon.com, Inc</Company>
+    <Copyright>Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.  2014-2016</Copyright>
+    <PackageId>AmazonElastiCacheClusterConfig</PackageId>
+    <Product>AmazonElastiCacheClusterConfig</Product>
+    <Description>A configuration object to enable auto discovery in Enyim for ElastiCache</Description>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <LangVersion>latest</LangVersion>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\.resources\awskey.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
+    <Configurations>Debug;Release</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Amazon.ElastiCacheCluster.xml</DocumentationFile>
+    <DefineConstants />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Amazon.ElastiCacheCluster.xml</DocumentationFile>
+    <DefineConstants />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Amazon.ElastiCacheCluster.xml</DocumentationFile>
+    <DefineConstants />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Amazon.ElastiCacheCluster.xml</DocumentationFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Amazon.ElastiCacheCluster.xml</DocumentationFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Amazon.ElastiCacheCluster.xml</DocumentationFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\.resources\awskey.snk" Link="Properties\awskey.snk" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Enyim.Caching\Enyim.Caching.csproj" />
+  </ItemGroup>
+
+</Project>

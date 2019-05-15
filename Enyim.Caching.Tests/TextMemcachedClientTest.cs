@@ -45,7 +45,7 @@ namespace MemcachedTest
 			using (MemcachedClient client = GetClient())
 			{
 				// store the item
-				var r1 = client.Store(StoreMode.Set, "CasItem1", "foo");
+				bool r1 = client.Store(StoreMode.Set, "CasItem1", "foo");
 
 				Assert.IsTrue(r1, "Initial set failed.");
 

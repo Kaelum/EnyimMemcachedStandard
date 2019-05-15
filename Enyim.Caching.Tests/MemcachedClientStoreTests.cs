@@ -25,7 +25,7 @@ namespace Enyim.Caching.Tests
 		[Test]
 		public void When_Storing_Item_With_Existing_Key_And_StoreMode_Add_Result_Is_Not_Successful()
 		{
-			var key = GetUniqueKey("store");
+			string key = GetUniqueKey("store");
 			var result = Store(StoreMode.Add, key);
 			StoreAssertPass(result);
 
@@ -45,7 +45,7 @@ namespace Enyim.Caching.Tests
 		[Test]
 		public void When_Storing_Item_With_Existing_Key_And_StoreMode_Replace_Result_Is_Successful()
 		{
-			var key = GetUniqueKey("store");
+			string key = GetUniqueKey("store");
 			var result = Store(StoreMode.Add, key);
 			StoreAssertPass(result);
 
@@ -63,7 +63,7 @@ namespace Enyim.Caching.Tests
 		[Test]
 		public void When_Storing_Item_With_Existing_Key_And_StoreMode_Set_Result_Is_Successful()
 		{
-			var key = GetUniqueKey("store");
+			string key = GetUniqueKey("store");
 			var result = Store(StoreMode.Add, key);
 			StoreAssertPass(result);
 

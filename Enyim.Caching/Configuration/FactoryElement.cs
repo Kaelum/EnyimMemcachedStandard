@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
-using System.Collections.Generic;
+
 using Enyim.Caching.Memcached;
 using Enyim.Reflection;
-using System.Xml.Linq;
 
 namespace Enyim.Caching.Configuration
 {
@@ -15,9 +15,11 @@ namespace Enyim.Caching.Configuration
 	public class FactoryElement<TFactory> : ConfigurationElement
 		where TFactory : class, IProvider
 	{
-		protected readonly Dictionary<string, string> Parameters = new Dictionary<string, string>();
-		private TFactory instance;
+		/// <summary></summary>
+		protected readonly Dictionary<string, string> parameters = new Dictionary<string, string>();
+		private TFactory _instance;
 
+		/// <summary></summary>
 		protected virtual bool IsOptional { get { return false; } }
 
 		/// <summary>
@@ -30,12 +32,18 @@ namespace Enyim.Caching.Configuration
 			set { base["factory"] = value; }
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="name"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
 		protected override bool OnDeserializeUnrecognizedAttribute(string name, string value)
 		{
 			ConfigurationProperty property = new ConfigurationProperty(name, typeof(string), value);
 			base[property] = value;
 
-			this.Parameters[name] = value;
+			parameters[name] = value;
 
 			return true;
 		}
@@ -47,28 +55,37 @@ namespace Enyim.Caching.Configuration
 		public TFactory CreateInstance()
 		{
 			//check if we have a factory
-			if (this.instance == null)
+			if (_instance == null)
 			{
-				var type = this.Factory;
+				var type = Factory;
 				if (type == null)
 				{
-					if (this.IsOptional || !this.ElementInformation.IsPresent)
+					if (IsOptional || !ElementInformation.IsPresent)
+					{
 						return null;
+					}
 
 					throw new ConfigurationErrorsException("factory must be defined");
 				}
 
-				this.instance = (TFactory)FastActivator.Create(type);
-				this.instance.Initialize(this.Parameters);
+				_instance = (TFactory)FastActivator.Create(type);
+				_instance.Initialize(parameters);
 			}
 
-			return this.instance;
+			return _instance;
 		}
 	}
 
+	/// <summary>
+	///
+	/// </summary>
+	/// <typeparam name="TResult"></typeparam>
 	public class OptionalFactoryElement<TResult> : FactoryElement<TResult>
 		where TResult : class, IProvider
 	{
+		/// <summary>
+		///
+		/// </summary>
 		protected override bool IsOptional
 		{
 			get { return true; }
@@ -79,20 +96,20 @@ namespace Enyim.Caching.Configuration
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

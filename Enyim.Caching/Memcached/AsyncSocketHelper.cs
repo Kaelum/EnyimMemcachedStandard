@@ -1,16 +1,13 @@
 //#define DEBUG_IO
 using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 
 namespace Enyim.Caching.Memcached
 {
+	/// <summary>
+	///		Summary description for
+	/// </summary>
 	public partial class PooledSocket
 	{
 		/// <summary>
@@ -18,32 +15,36 @@ namespace Enyim.Caching.Memcached
 		/// </summary>
 		private class AsyncSocketHelper
 		{
-			private const int ChunkSize = 65536;
+			private const int _chunkSize = 65536;
 
-			private PooledSocket socket;
-			private SlidingBuffer asyncBuffer;
+			private PooledSocket _socket;
+			private SlidingBuffer _asyncBuffer;
 
-			private SocketAsyncEventArgs readEvent;
+			private SocketAsyncEventArgs _readEvent;
 #if DEBUG_IO
 			private int doingIO;
 #endif
-			private int remainingRead;
-			private int expectedToRead;
-			private AsyncIOArgs pendingArgs;
+			private int _remainingRead;
+			private int _expectedToRead;
+			private AsyncIOArgs _pendingArgs;
 
-			private int isAborted;
-			private ManualResetEvent readInProgressEvent;
+			private int _isAborted;
+			private ManualResetEvent _readInProgressEvent;
 
+			/// <summary>
+			///
+			/// </summary>
+			/// <param name="socket"></param>
 			public AsyncSocketHelper(PooledSocket socket)
 			{
-				this.socket = socket;
-				this.asyncBuffer = new SlidingBuffer(ChunkSize);
+				_socket = socket;
+				_asyncBuffer = new SlidingBuffer(_chunkSize);
 
-				this.readEvent = new SocketAsyncEventArgs();
-				this.readEvent.Completed += new EventHandler<SocketAsyncEventArgs>(AsyncReadCompleted);
-				this.readEvent.SetBuffer(new byte[ChunkSize], 0, ChunkSize);
+				_readEvent = new SocketAsyncEventArgs();
+				_readEvent.Completed += new EventHandler<SocketAsyncEventArgs>(AsyncReadCompleted);
+				_readEvent.SetBuffer(new byte[_chunkSize], 0, _chunkSize);
 
-				this.readInProgressEvent = new ManualResetEvent(false);
+				_readInProgressEvent = new ManualResetEvent(false);
 			}
 
 			/// <summary>
@@ -53,19 +54,22 @@ namespace Enyim.Caching.Memcached
 			/// <returns></returns>
 			public bool Read(AsyncIOArgs p)
 			{
-				var count = p.Count;
-				if (count < 1) throw new ArgumentOutOfRangeException("count", "count must be > 0");
+				int count = p.Count;
+				if (count < 1)
+				{
+					throw new ArgumentOutOfRangeException("count", "count must be > 0");
+				}
 #if DEBUG_IO
 				if (Interlocked.CompareExchange(ref this.doingIO, 1, 0) != 0)
 					throw new InvalidOperationException("Receive is already in progress");
 #endif
-				this.expectedToRead = p.Count;
-				this.pendingArgs = p;
+				_expectedToRead = p.Count;
+				_pendingArgs = p;
 
 				p.Fail = false;
 				p.Result = null;
 
-				if (this.asyncBuffer.Available >= count)
+				if (_asyncBuffer.Available >= count)
 				{
 					PublishResult(false);
 
@@ -73,10 +77,10 @@ namespace Enyim.Caching.Memcached
 				}
 				else
 				{
-					this.remainingRead = count - this.asyncBuffer.Available;
-					this.isAborted = 0;
+					_remainingRead = count - _asyncBuffer.Available;
+					_isAborted = 0;
 
-					this.BeginReceive();
+					BeginReceive();
 
 					return true;
 				}
@@ -84,49 +88,57 @@ namespace Enyim.Caching.Memcached
 
 			public void DiscardBuffer()
 			{
-				this.asyncBuffer.UnsafeClear();
+				_asyncBuffer.UnsafeClear();
 			}
 
 			private void BeginReceive()
 			{
-				while (this.remainingRead > 0)
+				while (_remainingRead > 0)
 				{
-					this.readInProgressEvent.Reset();
+					_readInProgressEvent.Reset();
 
-					if (this.socket.socket.ReceiveAsync(this.readEvent))
+					if (_socket._socket.ReceiveAsync(_readEvent))
 					{
 						// wait until the timeout elapses, then abort this reading process
 						// EndREceive will be triggered sooner or later but its timeout
 						// may be higher than our read timeout, so it's not reliable
-						if (!readInProgressEvent.WaitOne(this.socket.socket.ReceiveTimeout))
-							this.AbortReadAndTryPublishError(false);
+						if (!_readInProgressEvent.WaitOne(_socket._socket.ReceiveTimeout))
+						{
+							AbortReadAndTryPublishError(false);
+						}
 
 						return;
 					}
 
-					this.EndReceive();
+					EndReceive();
 				}
 			}
 
 			void AsyncReadCompleted(object sender, SocketAsyncEventArgs e)
 			{
-				if (this.EndReceive())
-					this.BeginReceive();
+				if (EndReceive())
+				{
+					BeginReceive();
+				}
 			}
 
 			private void AbortReadAndTryPublishError(bool markAsDead)
 			{
 				if (markAsDead)
-					this.socket.isAlive = false;
+				{
+					_socket._isAlive = false;
+				}
 
 				// we've been already aborted, so quit
 				// both the EndReceive and the wait on the event can abort the read
 				// but only one should of them should continue the async call chain
-				if (Interlocked.CompareExchange(ref this.isAborted, 1, 0) != 0)
+				if (Interlocked.CompareExchange(ref _isAborted, 1, 0) != 0)
+				{
 					return;
+				}
 
-				this.remainingRead = 0;
-				var p = this.pendingArgs;
+				_remainingRead = 0;
+				var p = _pendingArgs;
 #if DEBUG_IO
 				Thread.MemoryBarrier();
 
@@ -136,7 +148,7 @@ namespace Enyim.Caching.Memcached
 				p.Fail = true;
 				p.Result = null;
 
-				this.pendingArgs.Next(p);
+				_pendingArgs.Next(p);
 			}
 
 			/// <summary>
@@ -145,23 +157,23 @@ namespace Enyim.Caching.Memcached
 			/// <returns></returns>
 			private bool EndReceive()
 			{
-				this.readInProgressEvent.Set();
+				_readInProgressEvent.Set();
 
-				var read = this.readEvent.BytesTransferred;
-				if (this.readEvent.SocketError != SocketError.Success
+				int read = _readEvent.BytesTransferred;
+				if (_readEvent.SocketError != SocketError.Success
 					|| read == 0)
 				{
-					this.AbortReadAndTryPublishError(true);//new IOException("Remote end has been closed"));
+					AbortReadAndTryPublishError(true);//new IOException("Remote end has been closed"));
 
 					return false;
 				}
 
-				this.remainingRead -= read;
-				this.asyncBuffer.Append(this.readEvent.Buffer, 0, read);
+				_remainingRead -= read;
+				_asyncBuffer.Append(_readEvent.Buffer, 0, read);
 
-				if (this.remainingRead <= 0)
+				if (_remainingRead <= 0)
 				{
-					this.PublishResult(true);
+					PublishResult(true);
 
 					return false;
 				}
@@ -171,18 +183,20 @@ namespace Enyim.Caching.Memcached
 
 			private void PublishResult(bool isAsync)
 			{
-				var retval = this.pendingArgs;
+				var retval = _pendingArgs;
 
-				var data = new byte[this.expectedToRead];
-				this.asyncBuffer.Read(data, 0, retval.Count);
-				pendingArgs.Result = data;
+				byte[] data = new byte[_expectedToRead];
+				_asyncBuffer.Read(data, 0, retval.Count);
+				_pendingArgs.Result = data;
 #if DEBUG_IO
 				Thread.MemoryBarrier();
 				this.doingIO = 0;
 #endif
 
 				if (isAsync)
-					pendingArgs.Next(pendingArgs);
+				{
+					_pendingArgs.Next(_pendingArgs);
+				}
 			}
 		}
 	}
@@ -190,20 +204,20 @@ namespace Enyim.Caching.Memcached
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

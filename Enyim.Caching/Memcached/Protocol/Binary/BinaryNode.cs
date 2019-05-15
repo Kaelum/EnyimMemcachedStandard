@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
-using System.Threading;
-using Enyim.Caching.Configuration;
-using Enyim.Collections;
 using System.Security;
+
+using Enyim.Caching.Configuration;
 
 namespace Enyim.Caching.Memcached.Protocol.Binary
 {
@@ -14,14 +11,20 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 	/// </summary>
 	public class BinaryNode : MemcachedNode
 	{
-		private static readonly Enyim.Caching.ILog log = Enyim.Caching.LogManager.GetLogger(typeof(BinaryNode));
+		private static readonly Enyim.Caching.ILog _log = LogManager.GetLogger(typeof(BinaryNode));
 
-		ISaslAuthenticationProvider authenticationProvider;
+		private readonly ISaslAuthenticationProvider _authenticationProvider;
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="endpoint"></param>
+		/// <param name="config"></param>
+		/// <param name="authenticationProvider"></param>
 		public BinaryNode(IPEndPoint endpoint, ISocketPoolConfiguration config, ISaslAuthenticationProvider authenticationProvider)
 			: base(endpoint, config)
 		{
-			this.authenticationProvider = authenticationProvider;
+			_authenticationProvider = authenticationProvider;
 		}
 
 		/// <summary>
@@ -31,11 +34,14 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 		{
 			var retval = base.CreateSocket();
 
-			if (this.authenticationProvider != null && !this.Auth(retval))
+			if (_authenticationProvider != null && !Auth(retval))
 			{
-				if (log.IsErrorEnabled) log.Error("Authentication failed: " + this.EndPoint);
+				if (_log.IsErrorEnabled)
+				{
+					_log.Error("Authentication failed: " + EndPoint);
+				}
 
-				throw new SecurityException("auth failed: " + this.EndPoint);
+				throw new SecurityException("auth failed: " + EndPoint);
 			}
 
 			return retval;
@@ -48,7 +54,7 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 		/// <returns></returns>
 		private bool Auth(PooledSocket socket)
 		{
-			SaslStep currentStep = new SaslStart(this.authenticationProvider);
+			SaslStep currentStep = new SaslStart(_authenticationProvider);
 
 			socket.Write(currentStep.GetBuffer());
 
@@ -57,13 +63,15 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 				// challenge-response authentication
 				if (currentStep.StatusCode == 0x21)
 				{
-					currentStep = new SaslContinue(this.authenticationProvider, currentStep.Data);
+					currentStep = new SaslContinue(_authenticationProvider, currentStep.Data);
 					socket.Write(currentStep.GetBuffer());
 				}
 				else
 				{
-					if (log.IsWarnEnabled)
-						log.WarnFormat("Authentication failed, return code: 0x{0:x}", currentStep.StatusCode);
+					if (_log.IsWarnEnabled)
+					{
+						_log.WarnFormat("Authentication failed, return code: 0x{0:x}", currentStep.StatusCode);
+					}
 
 					// invalid credentials or other error
 					return false;
@@ -77,20 +85,20 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

@@ -11,7 +11,7 @@ namespace Enyim.Caching
 {
 	public partial class MemcachedClient : IMemcachedClient, IMemcachedResultsClient
 	{
-		#region [ Store                        ]		
+		#region [ Store                        ]
 
 		/// <summary>
 		/// Inserts an item into the cache with a cache key to reference its location.
@@ -24,9 +24,8 @@ namespace Enyim.Caching
 		public IStoreOperationResult ExecuteStore(StoreMode mode, string key, object value)
 		{
 			ulong tmp = 0;
-			int status;
 
-			return this.PerformStore(mode, key, value, 0, ref tmp, out status);
+			return PerformStore(mode, key, value, 0, ref tmp, out int status);
 		}
 
 		/// <summary>
@@ -40,9 +39,8 @@ namespace Enyim.Caching
 		public IStoreOperationResult ExecuteStore(StoreMode mode, string key, object value, TimeSpan validFor)
 		{
 			ulong tmp = 0;
-			int status;
 
-			return this.PerformStore(mode, key, value, MemcachedClient.GetExpiration(validFor), ref tmp, out status);
+			return PerformStore(mode, key, value, GetExpiration(validFor), ref tmp, out int status);
 		}
 
 		/// <summary>
@@ -56,11 +54,10 @@ namespace Enyim.Caching
 		public IStoreOperationResult ExecuteStore(StoreMode mode, string key, object value, DateTime expiresAt)
 		{
 			ulong tmp = 0;
-			int status;
 
-			return this.PerformStore(mode, key, value, MemcachedClient.GetExpiration(expiresAt), ref tmp, out status);
-		}			
-		
+			return PerformStore(mode, key, value, GetExpiration(expiresAt), ref tmp, out int status);
+		}
+
 		#endregion
 
 		#region [ Cas						]
@@ -74,7 +71,7 @@ namespace Enyim.Caching
 		/// <returns>A CasResult object containing the version of the item and the result of the operation (true if the item was successfully stored in the cache; false otherwise).</returns>
 		public IStoreOperationResult ExecuteCas(StoreMode mode, string key, object value)
 		{
-			return this.PerformStore(mode, key, value, 0, 0);			
+			return PerformStore(mode, key, value, 0, 0);
 		}
 
 		/// <summary>
@@ -83,11 +80,12 @@ namespace Enyim.Caching
 		/// <param name="mode">Defines how the item is stored in the cache.</param>
 		/// <param name="key">The key used to reference the item.</param>
 		/// <param name="value">The object to be inserted into the cache.</param>
+		/// <param name="cas"></param>
 		/// <remarks>The item does not expire unless it is removed due memory pressure.</remarks>
 		/// <returns>A CasResult object containing the version of the item and the result of the operation (true if the item was successfully stored in the cache; false otherwise).</returns>
 		public IStoreOperationResult ExecuteCas(StoreMode mode, string key, object value, ulong cas)
 		{
-			return this.PerformStore(mode, key, value, 0, cas);
+			return PerformStore(mode, key, value, 0, cas);
 		}
 
 		/// <summary>
@@ -101,7 +99,7 @@ namespace Enyim.Caching
 		/// <returns>A CasResult object containing the version of the item and the result of the operation (true if the item was successfully stored in the cache; false otherwise).</returns>
 		public IStoreOperationResult ExecuteCas(StoreMode mode, string key, object value, TimeSpan validFor, ulong cas)
 		{
-			return this.PerformStore(mode, key, value, MemcachedClient.GetExpiration(validFor), cas);
+			return PerformStore(mode, key, value, GetExpiration(validFor), cas);
 		}
 
 		/// <summary>
@@ -115,10 +113,10 @@ namespace Enyim.Caching
 		/// <returns>A CasResult object containing the version of the item and the result of the operation (true if the item was successfully stored in the cache; false otherwise).</returns>
 		public IStoreOperationResult ExecuteCas(StoreMode mode, string key, object value, DateTime expiresAt, ulong cas)
 		{
-			return this.PerformStore(mode, key, value, MemcachedClient.GetExpiration(expiresAt), cas);
+			return PerformStore(mode, key, value, GetExpiration(expiresAt), cas);
 		}
 		#endregion
-		
+
 		#region [ Get                        ]
 
 		/// <summary>
@@ -128,9 +126,7 @@ namespace Enyim.Caching
 		/// <returns>The retrieved item, or <value>null</value> if the key was not found.</returns>
 		public IGetOperationResult ExecuteGet(string key)
 		{
-			object tmp;
-
-			return this.ExecuteTryGet(key, out tmp);
+			return ExecuteTryGet(key, out object tmp);
 		}
 
 		/// <summary>
@@ -141,9 +137,7 @@ namespace Enyim.Caching
 		/// <returns>The <value>true</value> if the item was successfully retrieved.</returns>
 		public IGetOperationResult ExecuteTryGet(string key, out object value)
 		{
-			ulong cas = 0;
-
-			return this.PerformTryGet(key, out cas, out value);
+			return PerformTryGet(key, out ulong cas, out value);
 		}
 
 		/// <summary>
@@ -153,28 +147,30 @@ namespace Enyim.Caching
 		/// <returns>The retrieved item, or <value>default(T)</value> if the key was not found.</returns>
 		public IGetOperationResult<T> ExecuteGet<T>(string key)
 		{
-			object tmp;
-			var result = new DefaultGetOperationResultFactory<T>().Create();
+			IGetOperationResult<T> result = new DefaultGetOperationResultFactory<T>().Create();
 
-			var tryGetResult = ExecuteTryGet(key, out tmp);
+			IGetOperationResult tryGetResult = ExecuteTryGet(key, out object tmp);
+
 			if (tryGetResult.Success)
 			{
-				if (tryGetResult.Value is T)
+				if (tryGetResult.Value is T value)
 				{
 					//HACK: this isn't optimal
 					tryGetResult.Copy(result);
 
-					result.Value = (T)tmp;
+					result.Value = value;
 					result.Cas = tryGetResult.Cas;
 				}
 				else
 				{
-					result.Value = default(T);
-					result.Fail("Type mismatch", new InvalidCastException());
+					result.Value = default;
+					result.Fail($"Type mismatch.  Expected {typeof(T).Name}, but found {tryGetResult.Value.GetType()}.", new InvalidCastException());
 				}
 				return result;
 			}
+
 			tryGetResult.Combine(result);
+
 			return result;
 		}
 
@@ -188,7 +184,7 @@ namespace Enyim.Caching
 			return PerformMultiGet<IGetOperationResult>(keys, (mget, kvp) =>
 			{
 				var result = GetOperationResultFactory.Create();
-				result.Value = this.transcoder.Deserialize(kvp.Value);
+				result.Value = _transcoder.Deserialize(kvp.Value);
 				result.Cas = mget.Cas[kvp.Key];
 				result.Success = true;
 				return result;
@@ -208,7 +204,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteIncrement(string key, ulong defaultValue, ulong delta)
 		{
-			return this.PerformMutate(MutationMode.Increment, key, defaultValue, delta, 0);
+			return PerformMutate(MutationMode.Increment, key, defaultValue, delta, 0);
 		}
 
 		/// <summary>
@@ -222,7 +218,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteIncrement(string key, ulong defaultValue, ulong delta, TimeSpan validFor)
 		{
-			return this.PerformMutate(MutationMode.Increment, key, defaultValue, delta, MemcachedClient.GetExpiration(validFor));
+			return PerformMutate(MutationMode.Increment, key, defaultValue, delta, GetExpiration(validFor));
 		}
 
 		/// <summary>
@@ -236,7 +232,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteIncrement(string key, ulong defaultValue, ulong delta, DateTime expiresAt)
 		{
-			return this.PerformMutate(MutationMode.Increment, key, defaultValue, delta, MemcachedClient.GetExpiration(expiresAt));
+			return PerformMutate(MutationMode.Increment, key, defaultValue, delta, GetExpiration(expiresAt));
 		}
 
 		/// <summary>
@@ -250,7 +246,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteIncrement(string key, ulong defaultValue, ulong delta, ulong cas)
 		{
-			return this.CasMutate(MutationMode.Increment, key, defaultValue, delta, 0, cas);
+			return CasMutate(MutationMode.Increment, key, defaultValue, delta, 0, cas);
 		}
 
 		/// <summary>
@@ -265,7 +261,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteIncrement(string key, ulong defaultValue, ulong delta, TimeSpan validFor, ulong cas)
 		{
-			return this.CasMutate(MutationMode.Increment, key, defaultValue, delta, MemcachedClient.GetExpiration(validFor), cas);
+			return CasMutate(MutationMode.Increment, key, defaultValue, delta, GetExpiration(validFor), cas);
 		}
 
 		/// <summary>
@@ -280,7 +276,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteIncrement(string key, ulong defaultValue, ulong delta, DateTime expiresAt, ulong cas)
 		{
-			return this.CasMutate(MutationMode.Increment, key, defaultValue, delta, MemcachedClient.GetExpiration(expiresAt), cas);
+			return CasMutate(MutationMode.Increment, key, defaultValue, delta, GetExpiration(expiresAt), cas);
 		}
 
 		/// <summary>
@@ -293,7 +289,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteDecrement(string key, ulong defaultValue, ulong delta)
 		{
-			return this.PerformMutate(MutationMode.Decrement, key, defaultValue, delta, 0);
+			return PerformMutate(MutationMode.Decrement, key, defaultValue, delta, 0);
 		}
 
 		/// <summary>
@@ -307,7 +303,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteDecrement(string key, ulong defaultValue, ulong delta, TimeSpan validFor)
 		{
-			return this.PerformMutate(MutationMode.Decrement, key, defaultValue, delta, MemcachedClient.GetExpiration(validFor));
+			return PerformMutate(MutationMode.Decrement, key, defaultValue, delta, GetExpiration(validFor));
 		}
 
 		/// <summary>
@@ -321,7 +317,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteDecrement(string key, ulong defaultValue, ulong delta, DateTime expiresAt)
 		{
-			return this.PerformMutate(MutationMode.Decrement, key, defaultValue, delta, MemcachedClient.GetExpiration(expiresAt));
+			return PerformMutate(MutationMode.Decrement, key, defaultValue, delta, GetExpiration(expiresAt));
 		}
 
 		/// <summary>
@@ -335,7 +331,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteDecrement(string key, ulong defaultValue, ulong delta, ulong cas)
 		{
-			return this.CasMutate(MutationMode.Decrement, key, defaultValue, delta, 0, cas);
+			return CasMutate(MutationMode.Decrement, key, defaultValue, delta, 0, cas);
 		}
 
 		/// <summary>
@@ -350,7 +346,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteDecrement(string key, ulong defaultValue, ulong delta, TimeSpan validFor, ulong cas)
 		{
-			return this.CasMutate(MutationMode.Decrement, key, defaultValue, delta, MemcachedClient.GetExpiration(validFor), cas);
+			return CasMutate(MutationMode.Decrement, key, defaultValue, delta, GetExpiration(validFor), cas);
 		}
 
 		/// <summary>
@@ -365,7 +361,7 @@ namespace Enyim.Caching
 		/// <remarks>If the client uses the Text protocol, the item must be inserted into the cache before it can be changed. It must be inserted as a <see cref="T:System.String"/>. Moreover the Text protocol only works with <see cref="System.UInt32"/> values, so return value -1 always indicates that the item was not found.</remarks>
 		public IMutateOperationResult ExecuteDecrement(string key, ulong defaultValue, ulong delta, DateTime expiresAt, ulong cas)
 		{
-			return this.CasMutate(MutationMode.Decrement, key, defaultValue, delta, MemcachedClient.GetExpiration(expiresAt), cas);
+			return CasMutate(MutationMode.Decrement, key, defaultValue, delta, GetExpiration(expiresAt), cas);
 		}
 		#endregion
 
@@ -381,7 +377,7 @@ namespace Enyim.Caching
 		{
 			ulong cas = 0;
 
-			return this.PerformConcatenate(ConcatenationMode.Append, key, ref cas, data);
+			return PerformConcatenate(ConcatenationMode.Append, key, ref cas, data);
 		}
 
 		/// <summary>
@@ -410,7 +406,7 @@ namespace Enyim.Caching
 		{
 			ulong cas = 0;
 
-			return this.PerformConcatenate(ConcatenationMode.Prepend, key, ref cas, data);
+			return PerformConcatenate(ConcatenationMode.Prepend, key, ref cas, data);
 		}
 
 		/// <summary>
@@ -431,7 +427,7 @@ namespace Enyim.Caching
 			}
 			return result;
 		}
-		
+
 		#endregion
 
 		#region [ Remove		]
@@ -443,13 +439,13 @@ namespace Enyim.Caching
 		/// <returns>true if the item was successfully removed from the cache; false otherwise.</returns>
 		public IRemoveOperationResult ExecuteRemove(string key)
 		{
-			var hashedKey = this.keyTransformer.Transform(key);
-			var node = this.pool.Locate(hashedKey);
-			var result = RemoveOperationResultFactory.Create();
+			string hashedKey = _keyTransformer.Transform(key);
+			IMemcachedNode node = _pool.Locate(hashedKey);
+			IRemoveOperationResult result = RemoveOperationResultFactory.Create();
 
 			if (node != null)
 			{
-				var command = this.pool.OperationFactory.Delete(hashedKey, 0);
+				var command = _pool.OperationFactory.Delete(hashedKey, 0);
 				var commandResult = node.Execute(command);
 
 				if (commandResult.Success)
@@ -475,22 +471,22 @@ namespace Enyim.Caching
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    @author Couchbase <info@couchbase.com>
  *    @copyright 2012 Couchbase, Inc.
  *    @copyright 2012 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

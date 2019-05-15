@@ -29,7 +29,7 @@ namespace Enyim.Caching.Configuration
 		{
 			EndPointElement ep = (EndPointElement)element;
 
-			return String.Concat(ep.Address, ":", ep.Port.ToString(CultureInfo.InvariantCulture));
+			return string.Concat(ep.Address, ":", ep.Port.ToString(CultureInfo.InvariantCulture));
 		}
 
 		/// <summary>
@@ -38,7 +38,7 @@ namespace Enyim.Caching.Configuration
 		/// <returns></returns>
 		public IList<IPEndPoint> ToIPEndPointCollection()
 		{
-			List<IPEndPoint> retval = new List<IPEndPoint>(this.Count);
+			List<IPEndPoint> retval = new List<IPEndPoint>(Count);
 			foreach (EndPointElement e in this)
 			{
 				retval.Add(e.EndPoint);

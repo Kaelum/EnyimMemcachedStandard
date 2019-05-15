@@ -50,7 +50,7 @@ namespace MemcachedTest
 
 				Assert.AreEqual(2, client.Increment("VALUE", 2, 2), "Increment failed");
 
-				var value = client.Get("VALUE");
+				object value = client.Get("VALUE");
 				Assert.AreEqual("2", value, "Get failed. Expected 2, returned: '" + value + "'");
 			}
 		}
@@ -140,7 +140,7 @@ namespace MemcachedTest
 		[TestCase]
 		public void IncrementLongTest()
 		{
-			var initialValue = 56UL * (ulong)System.Math.Pow(10, 11) + 1234;
+			ulong initialValue = 56UL * (ulong)System.Math.Pow(10, 11) + 1234;
 
 			using (MemcachedClient client = GetClient())
 			{

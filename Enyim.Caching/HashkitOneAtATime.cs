@@ -17,7 +17,7 @@ namespace Enyim
 	{
 		public HashkitOneAtATime()
 		{
-			this.HashSizeValue = 32;
+			HashSizeValue = 32;
 		}
 
 		public override bool CanTransformMultipleBlocks
@@ -29,16 +29,27 @@ namespace Enyim
 
 		protected override void HashCore(byte[] array, int ibStart, int cbSize)
 		{
-			if (array == null) throw new ArgumentNullException("array");
-			if (ibStart < 0 || ibStart > array.Length) throw new ArgumentOutOfRangeException("ibStart");
-			if (ibStart + cbSize > array.Length) throw new ArgumentOutOfRangeException("cbSize");
+			if (array == null)
+			{
+				throw new ArgumentNullException("array");
+			}
 
-			HashkitOneAtATime.UnsafeHashCore(array, ibStart, cbSize);
+			if (ibStart < 0 || ibStart > array.Length)
+			{
+				throw new ArgumentOutOfRangeException("ibStart");
+			}
+
+			if (ibStart + cbSize > array.Length)
+			{
+				throw new ArgumentOutOfRangeException("cbSize");
+			}
+
+			UnsafeHashCore(array, ibStart, cbSize);
 		}
 
 		protected override byte[] HashFinal()
 		{
-			return BitConverter.GetBytes(this.CurrentHash);
+			return BitConverter.GetBytes(CurrentHash);
 		}
 
 		public uint CurrentHash { get; private set; }
@@ -52,7 +63,7 @@ namespace Enyim
 
 			fixed (byte* start = &(data[offset]))
 			{
-				var ptr = start;
+				byte* ptr = start;
 
 				while (count > 0)
 				{
@@ -76,11 +87,11 @@ namespace Enyim
 
 		uint IUIntHashAlgorithm.ComputeHash(byte[] data)
 		{
-			this.Initialize();
+			Initialize();
 
-			this.HashCore(data, 0, data.Length);
+			HashCore(data, 0, data.Length);
 
-			return this.CurrentHash;
+			return CurrentHash;
 		}
 
 		#endregion

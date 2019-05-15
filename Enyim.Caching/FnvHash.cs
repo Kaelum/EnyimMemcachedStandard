@@ -7,22 +7,25 @@ namespace Enyim
 	/// Implements a 64 bit long FNV1 hash.
 	/// </summary>
 	/// <remarks>
-	/// Calculation found at http://lists.danga.com/pipermail/memcached/2007-April/003846.html, but 
+	/// Calculation found at http://lists.danga.com/pipermail/memcached/2007-April/003846.html, but
 	/// it is pretty much available everywhere
 	/// </remarks>
 	public class FNV64 : System.Security.Cryptography.HashAlgorithm, IUIntHashAlgorithm
 	{
-		protected const ulong Init = 0xcbf29ce484222325L;
-		protected const ulong Prime = 0x100000001b3L;
+		/// <summary></summary>
+		protected const ulong init = 0xcbf29ce484222325L;
+		/// <summary></summary>
+		protected const ulong prime = 0x100000001b3L;
 
-		protected ulong CurrentHashValue;
+		/// <summary></summary>
+		protected ulong currentHashValue;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:FNV64"/> class.
 		/// </summary>
 		public FNV64()
 		{
-			base.HashSizeValue = 64;
+			HashSizeValue = 64;
 		}
 
 		/// <summary>
@@ -30,7 +33,7 @@ namespace Enyim
 		/// </summary>
 		public override void Initialize()
 		{
-			this.CurrentHashValue = Init;
+			currentHashValue = init;
 		}
 
 		/// <summary>Routes data written to the object into the <see cref="T:FNV64" /> hash algorithm for computing the hash.</summary>
@@ -43,8 +46,8 @@ namespace Enyim
 
 			for (int i = ibStart; i < end; i++)
 			{
-				this.CurrentHashValue *= Prime;
-				this.CurrentHashValue ^= array[i];
+				currentHashValue *= prime;
+				currentHashValue ^= array[i];
 			}
 		}
 
@@ -54,17 +57,17 @@ namespace Enyim
 		/// <returns>The computed hash code.</returns>
 		protected override byte[] HashFinal()
 		{
-			return BitConverter.GetBytes(this.CurrentHashValue);
+			return BitConverter.GetBytes(currentHashValue);
 		}
 
 		#region [ IUIntHashAlgorithm           ]
 
 		uint IUIntHashAlgorithm.ComputeHash(byte[] data)
 		{
-			this.Initialize();
-			this.HashCore(data, 0, data.Length);
+			Initialize();
+			HashCore(data, 0, data.Length);
 
-			return (uint)this.CurrentHashValue;
+			return (uint)currentHashValue;
 		}
 
 		#endregion
@@ -85,8 +88,8 @@ namespace Enyim
 
 			for (int i = ibStart; i < end; i++)
 			{
-				this.CurrentHashValue ^= array[i];
-				this.CurrentHashValue *= Prime;
+				currentHashValue ^= array[i];
+				currentHashValue *= prime;
 			}
 		}
 	}
@@ -96,20 +99,22 @@ namespace Enyim
 	/// </summary>
 	public class FNV1 : HashAlgorithm, IUIntHashAlgorithm
 	{
-		protected const uint Prime = 16777619;
-		protected const uint Init = 2166136261;
+		/// <summary></summary>
+		protected const uint prime = 16777619;
+		/// <summary></summary>
+		protected const uint init = 2166136261;
 
 		/// <summary>
 		/// The current hash value.
 		/// </summary>
-		protected uint CurrentHashValue;
+		protected uint currentHashValue;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:FNV1a"/> class.
 		/// </summary>
 		public FNV1()
 		{
-			this.HashSizeValue = 32;
+			HashSizeValue = 32;
 		}
 
 		/// <summary>
@@ -117,7 +122,7 @@ namespace Enyim
 		/// </summary>
 		public override void Initialize()
 		{
-			this.CurrentHashValue = Init;
+			currentHashValue = init;
 		}
 
 		/// <summary>Routes data written to the object into the <see cref="T:FNV1a" /> hash algorithm for computing the hash.</summary>
@@ -130,8 +135,8 @@ namespace Enyim
 
 			for (int i = ibStart; i < end; i++)
 			{
-				this.CurrentHashValue *= FNV1.Prime;
-				this.CurrentHashValue ^= array[i];
+				currentHashValue *= prime;
+				currentHashValue ^= array[i];
 			}
 		}
 
@@ -141,17 +146,17 @@ namespace Enyim
 		/// <returns>The computed hash code.</returns>
 		protected override byte[] HashFinal()
 		{
-			return BitConverter.GetBytes(this.CurrentHashValue);
+			return BitConverter.GetBytes(currentHashValue);
 		}
 
 		#region [ IUIntHashAlgorithm           ]
 
 		uint IUIntHashAlgorithm.ComputeHash(byte[] data)
 		{
-			this.Initialize();
-			this.HashCore(data, 0, data.Length);
+			Initialize();
+			HashCore(data, 0, data.Length);
 
-			return this.CurrentHashValue;
+			return currentHashValue;
 		}
 
 		#endregion
@@ -172,8 +177,8 @@ namespace Enyim
 
 			for (int i = ibStart; i < end; i++)
 			{
-				this.CurrentHashValue ^= array[i];
-				this.CurrentHashValue *= FNV1.Prime;
+				currentHashValue ^= array[i];
+				currentHashValue *= prime;
 			}
 		}
 	}
@@ -190,11 +195,11 @@ namespace Enyim
 		/// <returns>The computed hash code.</returns>
 		protected override byte[] HashFinal()
 		{
-			this.CurrentHashValue += this.CurrentHashValue << 13;
-			this.CurrentHashValue ^= this.CurrentHashValue >> 7;
-			this.CurrentHashValue += this.CurrentHashValue << 3;
-			this.CurrentHashValue ^= this.CurrentHashValue >> 17;
-			this.CurrentHashValue += this.CurrentHashValue << 5;
+			currentHashValue += currentHashValue << 13;
+			currentHashValue ^= currentHashValue >> 7;
+			currentHashValue += currentHashValue << 3;
+			currentHashValue ^= currentHashValue >> 17;
+			currentHashValue += currentHashValue << 5;
 
 			return base.HashFinal();
 		}
@@ -203,20 +208,20 @@ namespace Enyim
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

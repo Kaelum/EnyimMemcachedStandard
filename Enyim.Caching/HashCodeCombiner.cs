@@ -1,3 +1,4 @@
+using System;
 
 namespace Enyim
 {
@@ -6,58 +7,93 @@ namespace Enyim
 	/// </summary>
 	public class HashCodeCombiner
 	{
-		private int currentHash;
+		private int _currentHash;
 
+		/// <summary>
+		///
+		/// </summary>
 		public HashCodeCombiner() : this(0x1505) { }
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="initialValue"></param>
 		public HashCodeCombiner(int initialValue)
 		{
-			this.currentHash = initialValue;
+			_currentHash = initialValue;
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="code1"></param>
+		/// <param name="code2"></param>
+		/// <returns></returns>
 		public static int Combine(int code1, int code2)
 		{
 			return ((code1 << 5) + code1) ^ code2;
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="value"></param>
 		public void Add(int value)
 		{
-			this.currentHash = HashCodeCombiner.Combine(this.currentHash, value);
+			_currentHash = Combine(_currentHash, value);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		public int CurrentHash
 		{
-			get { return this.currentHash; }
+			get { return _currentHash; }
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="code1"></param>
+		/// <param name="code2"></param>
+		/// <param name="code3"></param>
+		/// <returns></returns>
 		public static int Combine(int code1, int code2, int code3)
 		{
-			return HashCodeCombiner.Combine(HashCodeCombiner.Combine(code1, code2), code3);
+			return Combine(Combine(code1, code2), code3);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="code1"></param>
+		/// <param name="code2"></param>
+		/// <param name="code3"></param>
+		/// <param name="code4"></param>
+		/// <returns></returns>
 		public static int Combine(int code1, int code2, int code3, int code4)
 		{
-			return HashCodeCombiner.Combine(HashCodeCombiner.Combine(code1, code2), HashCodeCombiner.Combine(code3, code4));
+			return Combine(Combine(code1, code2), Combine(code3, code4));
 		}
 	}
 }
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

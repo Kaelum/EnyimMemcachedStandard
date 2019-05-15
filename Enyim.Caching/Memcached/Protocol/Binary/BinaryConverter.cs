@@ -3,18 +3,39 @@ using System.Text;
 
 namespace Enyim.Caching.Memcached.Protocol.Binary
 {
+	/// <summary>
+	///		Summary description for
+	/// </summary>
 	public static class BinaryConverter
 	{
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
 		public static unsafe ushort DecodeUInt16(byte[] buffer, int offset)
 		{
 			return (ushort)((buffer[offset] << 8) + buffer[offset + 1]);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
 		public static unsafe ushort DecodeUInt16(byte* buffer, int offset)
 		{
 			return (ushort)((buffer[offset] << 8) + buffer[offset + 1]);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="segment"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
 		public static unsafe int DecodeInt32(ArraySegment<byte> segment, int offset)
 		{
 			fixed (byte* buffer = segment.Array)
@@ -25,6 +46,12 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
 		public static unsafe int DecodeInt32(byte* buffer, int offset)
 		{
 			buffer += offset;
@@ -32,11 +59,23 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3];
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
 		public static unsafe int DecodeInt32(byte[] buffer, int offset)
 		{
 			return (buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | buffer[offset + 3];
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
 		public static unsafe ulong DecodeUInt64(byte[] buffer, int offset)
 		{
 			fixed (byte* ptr = buffer)
@@ -45,16 +84,28 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
+		/// <returns></returns>
 		public static unsafe ulong DecodeUInt64(byte* buffer, int offset)
 		{
 			buffer += offset;
 
-			var part1 = (uint)((buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3]);
-			var part2 = (uint)((buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7]);
+			uint part1 = (uint)((buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3]);
+			uint part2 = (uint)((buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7]);
 
 			return ((ulong)part1 << 32) | part2;
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
 		public static unsafe void EncodeUInt16(uint value, byte[] buffer, int offset)
 		{
 			fixed (byte* bufferPtr = buffer)
@@ -63,6 +114,12 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
 		public static unsafe void EncodeUInt16(uint value, byte* buffer, int offset)
 		{
 			byte* ptr = buffer + offset;
@@ -71,6 +128,12 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			ptr[1] = (byte)(value & 255);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
 		public static unsafe void EncodeUInt32(uint value, byte[] buffer, int offset)
 		{
 			fixed (byte* bufferPtr = buffer)
@@ -79,6 +142,12 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
 		public static unsafe void EncodeUInt32(uint value, byte* buffer, int offset)
 		{
 			byte* ptr = buffer + offset;
@@ -89,6 +158,12 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			ptr[3] = (byte)(value & 255);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
 		public static unsafe void EncodeUInt64(ulong value, byte[] buffer, int offset)
 		{
 			fixed (byte* bufferPtr = buffer)
@@ -97,6 +172,12 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="value"></param>
+		/// <param name="buffer"></param>
+		/// <param name="offset"></param>
 		public static unsafe void EncodeUInt64(ulong value, byte* buffer, int offset)
 		{
 			byte* ptr = buffer + offset;
@@ -111,23 +192,49 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 			ptr[7] = (byte)(value & 255);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
 		public static byte[] EncodeKey(string key)
 		{
-			if (String.IsNullOrEmpty(key)) return null;
+			if (string.IsNullOrEmpty(key))
+			{
+				return null;
+			}
 
 			return Encoding.UTF8.GetBytes(key);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="data"></param>
+		/// <returns></returns>
 		public static string DecodeKey(byte[] data)
 		{
-			if (data == null || data.Length == 0) return null;
+			if (data == null || data.Length == 0)
+			{
+				return null;
+			}
 
 			return Encoding.UTF8.GetString(data);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="index"></param>
+		/// <param name="count"></param>
+		/// <returns></returns>
 		public static string DecodeKey(byte[] data, int index, int count)
 		{
-			if (data == null || data.Length == 0 || count == 0) return null;
+			if (data == null || data.Length == 0 || count == 0)
+			{
+				return null;
+			}
 
 			return Encoding.UTF8.GetString(data, index, count);
 		}
@@ -136,20 +243,20 @@ namespace Enyim.Caching.Memcached.Protocol.Binary
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

@@ -9,18 +9,18 @@ namespace Enyim.Collections
 	/// <typeparam name="T"></typeparam>
 	public class InterlockedQueue<T>
 	{
-		private Node headNode;
-		private Node tailNode;
+		private Node _headNode;
+		private Node _tailNode;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="T:InterlockedQueue"/> class.
 		/// </summary>
 		public InterlockedQueue()
 		{
-			Node node = new Node(default(T));
+			Node node = new Node(default);
 
-			this.headNode = node;
-			this.tailNode = node;
+			_headNode = node;
+			_tailNode = node;
 		}
 
 		/// <summary>
@@ -37,29 +37,30 @@ namespace Enyim.Collections
 			while (true)
 			{
 				// read head
-				head = this.headNode;
-				tail = this.tailNode;
+				head = _headNode;
+				tail = _tailNode;
 				next = head.Next;
 
 				// Are head, tail, and next consistent?
-				if (Object.ReferenceEquals(this.headNode, head))
+				if (ReferenceEquals(_headNode, head))
 				{
 					// is tail falling behind
-					if (Object.ReferenceEquals(head, tail))
+					if (ReferenceEquals(head, tail))
 					{
 						// is the queue empty?
-						if (Object.ReferenceEquals(next, null))
+						if (next == null)
 						{
-							value = default(T);
+							value = default;
 
 							// queue is empty and cannot dequeue
 							return false;
 						}
 
 						Interlocked.CompareExchange<Node>(
-							ref this.tailNode,
+							ref _tailNode,
 							next,
-							tail);
+							tail
+						);
 					}
 					else // No need to deal with tail
 					{
@@ -67,10 +68,7 @@ namespace Enyim.Collections
 						value = next.Value;
 
 						// try to swing the head to the next node
-						if (Interlocked.CompareExchange<Node>(
-							ref this.headNode,
-							next,
-							head) == head)
+						if (Interlocked.CompareExchange<Node>(ref _headNode, next, head) == head)
 						{
 							return true;
 						}
@@ -79,6 +77,11 @@ namespace Enyim.Collections
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="value"></param>
+		/// <returns></returns>
 		public bool Peek(out T value)
 		{
 			Node head;
@@ -88,27 +91,27 @@ namespace Enyim.Collections
 			while (true)
 			{
 				// read head
-				head = this.headNode;
-				tail = this.tailNode;
+				head = _headNode;
+				tail = _tailNode;
 				next = head.Next;
 
 				// Are head, tail, and next consistent?
-				if (Object.ReferenceEquals(this.headNode, head))
+				if (ReferenceEquals(_headNode, head))
 				{
 					// is tail falling behind
-					if (Object.ReferenceEquals(head, tail))
+					if (ReferenceEquals(head, tail))
 					{
 						// is the queue empty?
-						if (Object.ReferenceEquals(next, null))
+						if (next == null)
 						{
-							value = default(T);
+							value = default;
 
 							// queue is empty
 							return false;
 						}
 
 						Interlocked.CompareExchange<Node>(
-							ref this.tailNode,
+							ref _tailNode,
 							next,
 							tail);
 					}
@@ -133,29 +136,25 @@ namespace Enyim.Collections
 
 			while (true)
 			{
-				Node tail = this.tailNode;
+				Node tail = _tailNode;
 				Node next = tail.Next;
 
 				// are tail and next consistent
-				if (Object.ReferenceEquals(tail, this.tailNode))
+				if (ReferenceEquals(tail, _tailNode))
 				{
 					// was tail pointing to the last node?
-					if (Object.ReferenceEquals(next, null))
+					if (next == null)
 					{
-						if (Object.ReferenceEquals(
-								Interlocked.CompareExchange(ref tail.Next, valueNode, next),
-								next
-								)
-							)
+						if (ReferenceEquals(Interlocked.CompareExchange(ref tail.Next, valueNode, next), next))
 						{
-							Interlocked.CompareExchange(ref this.tailNode, valueNode, tail);
+							Interlocked.CompareExchange(ref _tailNode, valueNode, tail);
 							break;
 						}
 					}
 					else // tail was not pointing to last node
 					{
 						// try to swing Tail to the next node
-						Interlocked.CompareExchange<Node>(ref this.tailNode, next, tail);
+						Interlocked.CompareExchange<Node>(ref _tailNode, next, tail);
 					}
 				}
 			}
@@ -169,7 +168,7 @@ namespace Enyim.Collections
 
 			public Node(T value)
 			{
-				this.Value = value;
+				Value = value;
 			}
 		}
 		#endregion
@@ -178,20 +177,20 @@ namespace Enyim.Collections
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

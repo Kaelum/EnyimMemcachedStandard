@@ -32,16 +32,16 @@ namespace Enyim.Caching
 
 		static LogManager()
 		{
-			var section = ConfigurationManager.GetSection("enyim.com/log") as Enyim.Caching.Configuration.LoggerSection;
+			Configuration.LoggerSection section = ConfigurationManager.GetSection("enyim.com/log") as Enyim.Caching.Configuration.LoggerSection;
 			ILogFactory f = null;
 
 			if (section != null && section.LogFactory != null)
 			{
-				f = Enyim.Reflection.FastActivator.Create(section.LogFactory) as ILogFactory;
+				f = Reflection.FastActivator.Create(section.LogFactory) as ILogFactory;
 			}
 #if !log4net
 			// use an empty logger if nothing is specified in the app.config
-			LogManager.factory = f ?? (ILogFactory)new NullLoggerFactory();
+			factory = f ?? (ILogFactory)new NullLoggerFactory();
 #else
 			// use the log4net logger logger if nothing is specified in the app.config
 			LogManager.factory = f ?? (ILogFactory)new Log4NetLogFactory();
@@ -54,7 +54,11 @@ namespace Enyim.Caching
 		/// <param name="factory"></param>
 		public static void AssignFactory(ILogFactory factory)
 		{
-			if (factory == null) throw new ArgumentNullException("factory");
+			if (factory == null)
+			{
+				throw new ArgumentNullException("factory");
+			}
+
 			LogManager.factory = factory;
 		}
 

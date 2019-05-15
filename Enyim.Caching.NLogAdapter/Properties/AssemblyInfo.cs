@@ -1,9 +1,5 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyProduct("Enyim.Caching.NLogAdapter")]
-[assembly: AssemblyTitle("Enyim.Caching.NLogAdapter")]
 [assembly: ComVisible(false)]
 [assembly: Guid("d54c6003-0688-45c0-9a16-99cc054066ad")]
 

@@ -12,22 +12,22 @@ namespace Enyim.Caching.Tests
 		[Test]
 		public void When_Incrementing_Value_Result_Is_Successful()
 		{
-			var key = GetUniqueKey("mutate");
-			var mutateResult = _Client.ExecuteIncrement(key, 100, 10);
+			string key = GetUniqueKey("mutate");
+			var mutateResult = client.ExecuteIncrement(key, 100, 10);
 			MutateAssertPass(mutateResult, 100);
 
-			mutateResult = _Client.ExecuteIncrement(key, 100, 10);
+			mutateResult = client.ExecuteIncrement(key, 100, 10);
 			MutateAssertPass(mutateResult, 110);
 		}
 
 		[Test]
 		public void When_Decrementing_Value_Result_Is_Successful()
 		{
-			var key = GetUniqueKey("mutate");
-			var mutateResult = _Client.ExecuteDecrement(key, 100, 10);
+			string key = GetUniqueKey("mutate");
+			var mutateResult = client.ExecuteDecrement(key, 100, 10);
 			MutateAssertPass(mutateResult, 100);
 
-			mutateResult = _Client.ExecuteDecrement(key, 100, 10);
+			mutateResult = client.ExecuteDecrement(key, 100, 10);
 			MutateAssertPass(mutateResult, 90);
 		}
 	}

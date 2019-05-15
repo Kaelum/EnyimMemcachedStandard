@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Enyim.Caching.Memcached.Results.Extensions
 {
+	/// <summary>
+	///		Summary description for
+	/// </summary>
 	public static class OperationResultExtensions
 	{
 		/// <summary>
@@ -39,6 +39,7 @@ namespace Enyim.Caching.Memcached.Results.Extensions
 		/// Copy properties from one IOperationResult to another.  Does not use reflection.
 		/// Ony LCD properties are copied
 		/// </summary>
+		/// <param name="source"></param>
 		/// <param name="target"></param>
 		public static void Copy(this IOperationResult source, IOperationResult target)
 		{
@@ -52,7 +53,10 @@ namespace Enyim.Caching.Memcached.Results.Extensions
 		/// Copy properties from one IOperationResult to another.  Does not use reflection.
 		/// Ony LCD properties are copied
 		/// </summary>
-		/// <param name="target"></param>
+		/// <param name="source"></param>
+		/// <param name="success"></param>
+		/// <param name="message"></param>
+		/// <param name="ex"></param>
 		public static IOperationResult PassOrFail(this IOperationResult source, bool success, string message = "", Exception ex = null)
 		{
 			return success ? Pass(source) : Fail(source, message, ex);
@@ -61,6 +65,7 @@ namespace Enyim.Caching.Memcached.Results.Extensions
 		/// <summary>
 		/// Combine will attempt to minimize the depth of InnerResults and maintain status codes
 		/// </summary>
+		/// <param name="source"></param>
 		/// <param name="target"></param>
 		public static void Combine(this IOperationResult source, IOperationResult target)
 		{
@@ -75,22 +80,22 @@ namespace Enyim.Caching.Memcached.Results.Extensions
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    @author Couchbase <info@couchbase.com>
  *    @copyright 2012 Couchbase, Inc.
  *    @copyright 2012 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion

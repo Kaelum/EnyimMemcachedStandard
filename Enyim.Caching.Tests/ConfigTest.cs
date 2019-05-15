@@ -1,11 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
+
 using Enyim.Caching;
 using Enyim.Caching.Configuration;
 using Enyim.Caching.Memcached;
+
+using log4net.Config;
+using log4net.Repository;
+
 using NUnit.Framework;
 
 namespace MemcachedTest
@@ -13,14 +20,17 @@ namespace MemcachedTest
 	[TestFixture]
 	public class ConfigTest
 	{
-		[TestFixtureSetUp]
+		[OneTimeSetUp]
 		public void Setup()
 		{
-			log4net.Config.XmlConfigurator.Configure();
+			ILoggerRepository loggerRepository = log4net.LogManager.GetRepository(Assembly.GetExecutingAssembly());
+			FileInfo configFileInfo = new FileInfo("App.config");
+			XmlConfigurator.Configure(loggerRepository, configFileInfo);
+
 			TestSetup.Run();
 		}
 
-		[TestFixtureTearDown]
+		[OneTimeTearDown]
 		public void TearDown()
 		{
 			TestSetup.Cleanup();
@@ -60,7 +70,10 @@ namespace MemcachedTest
 		[TestCase]
 		public void DefaultConfigurationTest()
 		{
-			using (new MemcachedClient()) ;
+			using (new MemcachedClient())
+			{
+				;
+			}
 		}
 
 		/// <summary>
@@ -80,13 +93,13 @@ namespace MemcachedTest
 		[TestCase]
 		public void TestLoadingNamedConfig()
 		{
-			var config = ConfigurationManager.GetSection("test/validConfig") as IMemcachedClientConfiguration;
+			IMemcachedClientConfiguration config = ConfigurationManager.GetSection("test/validConfig") as IMemcachedClientConfiguration;
 			Assert.NotNull(config);
 
 			var spc = config.SocketPool;
 			Assert.NotNull(spc);
 
-			var expected = new TimeSpan(0, 12, 34);
+			TimeSpan expected = new TimeSpan(0, 12, 34);
 
 			Assert.AreEqual(expected, spc.ConnectionTimeout);
 			Assert.AreEqual(expected, spc.DeadTimeout);
@@ -106,7 +119,7 @@ namespace MemcachedTest
 		{
 			Assert.Throws<ConfigurationErrorsException>(() =>
 			{
-				using (var client = new MemcachedClient("test/invalidConfig"))
+				using (MemcachedClient client = new MemcachedClient("test/invalidConfig"))
 				{
 					Assert.IsFalse(false, ".ctor should have failed.");
 				}
@@ -118,7 +131,7 @@ namespace MemcachedTest
 		{
 			Assert.Throws<ArgumentNullException>(() =>
 			{
-				using (var client = new MemcachedClient((IMemcachedClientConfiguration)null))
+				using (MemcachedClient client = new MemcachedClient((IMemcachedClientConfiguration)null))
 				{
 					Assert.IsFalse(false, ".ctor should have failed.");
 				}
@@ -146,7 +159,10 @@ namespace MemcachedTest
 			mcc.SocketPool.ConnectionTimeout = new TimeSpan(0, 0, 10);
 			mcc.SocketPool.DeadTimeout = new TimeSpan(0, 0, 30);
 
-			using (new MemcachedClient(mcc)) ;
+			using (new MemcachedClient(mcc))
+			{
+				;
+			}
 		}
 
 		[TestCase]
@@ -158,44 +174,23 @@ namespace MemcachedTest
 			mcc.Servers.Add(new System.Net.IPEndPoint(IPAddress.Loopback, 20000));
 			mcc.Servers.Add(new System.Net.IPEndPoint(IPAddress.Loopback, 20002));
 
-			using (new MemcachedClient(mcc)) ;
-		}
-
-		[TestCase]
-		public void TestPerfMonNull()
-		{
-			Assert.IsNull(((IMemcachedClientConfiguration)ConfigurationManager.GetSection("test/validConfig")).CreatePerformanceMonitor());
-
-			Assert.IsNull(((IMemcachedClientConfiguration)new Enyim.Caching.Configuration.MemcachedClientConfiguration()).CreatePerformanceMonitor());
-		}
-
-		[TestCase]
-		public void TestPerfMonByType()
-		{
-			var config = ConfigurationManager.GetSection("test/memcachedPerfMonWithType") as IMemcachedClientConfiguration;
-
-			Assert.IsInstanceOf<TestPerfMon>(config.CreatePerformanceMonitor());
-		}
-
-		[TestCase]
-		public void TestPerfMonByFactory()
-		{
-			var config = ConfigurationManager.GetSection("test/memcachedPerfMonWithFactory") as IMemcachedClientConfiguration;
-
-			Assert.IsInstanceOf<TestPerfMon>(config.CreatePerformanceMonitor());
+			using (new MemcachedClient(mcc))
+			{
+				;
+			}
 		}
 
 		[TestCase]
 		public void TestThrottlingFailurePolicy()
 		{
-			var config = ConfigurationManager.GetSection("test/throttlingFailurePolicy") as IMemcachedClientConfiguration;
+			IMemcachedClientConfiguration config = ConfigurationManager.GetSection("test/throttlingFailurePolicy") as IMemcachedClientConfiguration;
 
 			var policyFactory = config.SocketPool.FailurePolicyFactory;
 
 			Assert.IsNotNull(policyFactory);
 			Assert.IsInstanceOf<ThrottlingFailurePolicyFactory>(policyFactory);
 
-			var tfp = (ThrottlingFailurePolicyFactory)policyFactory;
+			ThrottlingFailurePolicyFactory tfp = (ThrottlingFailurePolicyFactory)policyFactory;
 
 			Assert.IsTrue(tfp.FailureThreshold == 10, "failureThreshold must be 10");
 			Assert.IsTrue(tfp.ResetAfter == 100, "resetAfter must be 100 msec");
@@ -256,11 +251,11 @@ namespace MemcachedTest
 
 	class TestLocator : IMemcachedNodeLocator
 	{
-		private IList<IMemcachedNode> nodes;
+		private IList<IMemcachedNode> _nodes;
 
 		void IMemcachedNodeLocator.Initialize(IList<IMemcachedNode> nodes)
 		{
-			this.nodes = nodes;
+			_nodes = nodes;
 		}
 
 		IMemcachedNode IMemcachedNodeLocator.Locate(string key)
@@ -270,7 +265,7 @@ namespace MemcachedTest
 
 		IEnumerable<IMemcachedNode> IMemcachedNodeLocator.GetWorkingNodes()
 		{
-			return this.nodes.ToArray();
+			return _nodes.ToArray();
 		}
 	}
 
@@ -281,67 +276,12 @@ namespace MemcachedTest
 			return null;
 		}
 	}
-
-	class TestMemcachedPerfMonFactory : IProviderFactory<IPerformanceMonitor>
-	{
-		void IProvider.Initialize(Dictionary<string, string> parameters)
-		{
-			Assert.IsTrue(parameters.ContainsKey("test"));
-		}
-
-		IPerformanceMonitor IProviderFactory<IPerformanceMonitor>.Create()
-		{
-			return new TestPerfMon();
-		}
-	}
-
-	class TestPerfMon : IPerformanceMonitor
-	{
-		#region IPerformanceMonitor Members
-
-		void IPerformanceMonitor.Get(int amount, bool success)
-		{
-			throw new NotImplementedException();
-		}
-
-		void IPerformanceMonitor.Store(StoreMode mode, int amount, bool success)
-		{
-			throw new NotImplementedException();
-		}
-
-		void IPerformanceMonitor.Delete(int amount, bool success)
-		{
-			throw new NotImplementedException();
-		}
-
-		void IPerformanceMonitor.Mutate(MutationMode mode, int amount, bool success)
-		{
-			throw new NotImplementedException();
-		}
-
-		void IPerformanceMonitor.Concatenate(ConcatenationMode mode, int amount, bool success)
-		{
-			throw new NotImplementedException();
-		}
-
-		#endregion
-
-		#region IDisposable Members
-
-		void IDisposable.Dispose()
-		{
-			throw new NotImplementedException();
-		}
-
-		#endregion
-	}
-
 }
 
 #region [ License information          ]
 /* ************************************************************
  *
- *    Copyright (c) 2010 Attila Kiskó, enyim.com
+ *    Copyright (c) 2010 Attila KiskÃ³, enyim.com
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.

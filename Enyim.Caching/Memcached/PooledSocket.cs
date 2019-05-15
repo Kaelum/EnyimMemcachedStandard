@@ -1,42 +1,51 @@
 //#define DEBUG_IO
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Runtime.InteropServices;
 
 namespace Enyim.Caching.Memcached
 {
 	[DebuggerDisplay("[ Address: {endpoint}, IsAlive = {IsAlive} ]")]
 	public partial class PooledSocket : IDisposable
 	{
-		private static readonly Enyim.Caching.ILog log = Enyim.Caching.LogManager.GetLogger(typeof(PooledSocket));
+		private static readonly Enyim.Caching.ILog _log = LogManager.GetLogger(typeof(PooledSocket));
 
-		private bool isAlive;
-		private Socket socket;
-		private IPEndPoint endpoint;
+		private bool _isAlive;
+		private Socket _socket;
+		private IPEndPoint _endpoint;
 
-		private BufferedStream inputStream;
-		private AsyncSocketHelper helper;
+		private BufferedStream _inputStream;
+		private AsyncSocketHelper _helper;
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="endpoint"></param>
+		/// <param name="connectionTimeout"></param>
+		/// <param name="receiveTimeout"></param>
+		/// <param name="keepAliveStartDelay"></param>
+		/// <param name="keepAliveInterval"></param>
 		public PooledSocket(IPEndPoint endpoint, TimeSpan connectionTimeout, TimeSpan receiveTimeout, TimeSpan keepAliveStartDelay, TimeSpan keepAliveInterval)
 		{
-			this.isAlive = true;
+			_isAlive = true;
 
-			var socket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-			// TODO test if we're better off using nagle
-			socket.NoDelay = true;
+			Socket socket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
+			{
+				// TODO test if we're better off using nagle
+				NoDelay = true
+			};
 
-			var timeout = connectionTimeout == TimeSpan.MaxValue
+			int timeout = connectionTimeout == TimeSpan.MaxValue
 							? Timeout.Infinite
 							: (int)connectionTimeout.TotalMilliseconds;
 
-			var rcv = receiveTimeout == TimeSpan.MaxValue
+			int rcv = receiveTimeout == TimeSpan.MaxValue
 				? Timeout.Infinite
 				: (int)receiveTimeout.TotalMilliseconds;
 
@@ -46,17 +55,17 @@ namespace Enyim.Caching.Memcached
 			ConfigureKeepAlive(socket, keepAliveStartDelay, keepAliveInterval);
 			ConnectWithTimeout(socket, endpoint, timeout);
 
-			this.socket = socket;
-			this.endpoint = endpoint;
+			_socket = socket;
+			_endpoint = endpoint;
 
-			this.inputStream = new BufferedStream(new BasicNetworkStream(socket));
+			_inputStream = new BufferedStream(new BasicNetworkStream(socket));
 		}
 
 		private static void ConfigureKeepAlive(Socket socket, TimeSpan keepAliveStartFrom, TimeSpan keepAliveInterval)
 		{
-			var SizeOfUint = Marshal.SizeOf((uint)0);
-			var inOptionValues = new byte[SizeOfUint * 3];
-			var isEnabled = keepAliveStartFrom > TimeSpan.Zero || keepAliveInterval > TimeSpan.Zero;
+			int SizeOfUint = Marshal.SizeOf((uint)0);
+			byte[] inOptionValues = new byte[SizeOfUint * 3];
+			bool isEnabled = keepAliveStartFrom > TimeSpan.Zero || keepAliveInterval > TimeSpan.Zero;
 
 			BitConverter.GetBytes((uint)(isEnabled ? 1 : 0)).CopyTo(inOptionValues, 0);
 			BitConverter.GetBytes((uint)keepAliveInterval.TotalMilliseconds).CopyTo(inOptionValues, SizeOfUint);
@@ -67,52 +76,76 @@ namespace Enyim.Caching.Memcached
 
 		private static void ConnectWithTimeout(Socket socket, IPEndPoint endpoint, int timeout)
 		{
-			var mre = new ManualResetEvent(false);
+			ManualResetEvent mre = new ManualResetEvent(false);
 
 			socket.BeginConnect(endpoint, iar =>
 			{
-				try { using (iar.AsyncWaitHandle) socket.EndConnect(iar); }
+				try { using (iar.AsyncWaitHandle)
+					{
+						socket.EndConnect(iar);
+					}
+				}
 				catch { }
 
 				mre.Set();
 			}, null);
 
 			if (!mre.WaitOne(timeout) || !socket.Connected)
+			{
 				using (socket)
+				{
 					throw new TimeoutException("Could not connect to " + endpoint);
+				}
+			}
 		}
 
+		/// <summary></summary>
 		public Action<PooledSocket> CleanupCallback { get; set; }
 
+		/// <summary>
+		///
+		/// </summary>
 		public int Available
 		{
-			get { return this.socket.Available; }
+			get { return _socket.Available; }
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		public void Reset()
 		{
 			// discard any buffered data
-			this.inputStream.Flush();
+			_inputStream.Flush();
 
-			if (this.helper != null) this.helper.DiscardBuffer();
+			if (_helper != null)
+			{
+				_helper.DiscardBuffer();
+			}
 
-			int available = this.socket.Available;
+			int available = _socket.Available;
 
 			if (available > 0)
 			{
-				if (log.IsWarnEnabled)
-					log.WarnFormat("Socket bound to {0} has {1} unread data! This is probably a bug in the code. InstanceID was {2}.", this.socket.RemoteEndPoint, available, this.InstanceId);
+				if (_log.IsWarnEnabled)
+				{
+					_log.WarnFormat("Socket bound to {0} has {1} unread data! This is probably a bug in the code. InstanceID was {2}.", _socket.RemoteEndPoint, available, InstanceId);
+				}
 
 				byte[] data = new byte[available];
 
-				this.Read(data, 0, available);
+				Read(data, 0, available);
 
-				if (log.IsWarnEnabled)
-					log.Warn(Encoding.ASCII.GetString(data));
+				if (_log.IsWarnEnabled)
+				{
+					_log.Warn(Encoding.ASCII.GetString(data));
+				}
 			}
 
-			if (log.IsDebugEnabled)
-				log.DebugFormat("Socket {0} was reset", this.InstanceId);
+			if (_log.IsDebugEnabled)
+			{
+				_log.DebugFormat("Socket {0} was reset", InstanceId);
+			}
 		}
 
 		/// <summary>
@@ -120,9 +153,12 @@ namespace Enyim.Caching.Memcached
 		/// </summary>
 		public readonly Guid InstanceId = Guid.NewGuid();
 
+		/// <summary>
+		///
+		/// </summary>
 		public bool IsAlive
 		{
-			get { return this.isAlive; }
+			get { return _isAlive; }
 		}
 
 		/// <summary>
@@ -131,15 +167,22 @@ namespace Enyim.Caching.Memcached
 		/// <remarks>Use the IDisposable.Dispose method if you want to release this instance back into the pool.</remarks>
 		public void Destroy()
 		{
-			this.Dispose(true);
+			Dispose(true);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		~PooledSocket()
 		{
-			try { this.Dispose(true); }
+			try { Dispose(true); }
 			catch { }
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="disposing"></param>
 		protected void Dispose(bool disposing)
 		{
 			if (disposing)
@@ -148,25 +191,29 @@ namespace Enyim.Caching.Memcached
 
 				try
 				{
-					if (socket != null)
-						try { this.socket.Close(); }
+					if (_socket != null)
+					{
+						try { _socket.Close(); }
 						catch { }
+					}
 
-					if (this.inputStream != null)
-						this.inputStream.Dispose();
+					if (_inputStream != null)
+					{
+						_inputStream.Dispose();
+					}
 
-					this.inputStream = null;
-					this.socket = null;
-					this.CleanupCallback = null;
+					_inputStream = null;
+					_socket = null;
+					CleanupCallback = null;
 				}
 				catch (Exception e)
 				{
-					log.Error(e);
+					_log.Error(e);
 				}
 			}
 			else
 			{
-				Action<PooledSocket> cc = this.CleanupCallback;
+				Action<PooledSocket> cc = CleanupCallback;
 
 				if (cc != null)
 				{
@@ -176,21 +223,29 @@ namespace Enyim.Caching.Memcached
 					}
 					catch (Exception e)
 					{
-						log.Info("CleanupCallback failed during Dispose. Ignoring the exception.", e);
+						_log.Info("CleanupCallback failed during Dispose. Ignoring the exception.", e);
 					}
 				}
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		void IDisposable.Dispose()
 		{
-			this.Dispose(false);
+			Dispose(false);
 		}
 
+		/// <summary>
+		///
+		/// </summary>
 		private void CheckDisposed()
 		{
-			if (this.socket == null)
+			if (_socket == null)
+			{
 				throw new ObjectDisposedException("PooledSocket");
+			}
 		}
 
 		/// <summary>
@@ -199,15 +254,15 @@ namespace Enyim.Caching.Memcached
 		/// <remarks>This method blocks and will not return until the value is read.</remarks>
 		public int ReadByte()
 		{
-			this.CheckDisposed();
+			CheckDisposed();
 
 			try
 			{
-				return this.inputStream.ReadByte();
+				return _inputStream.ReadByte();
 			}
 			catch (IOException)
 			{
-				this.isAlive = false;
+				_isAlive = false;
 
 				throw;
 			}
@@ -222,7 +277,7 @@ namespace Enyim.Caching.Memcached
 		/// <remarks>This method blocks and will not return until the specified amount of bytes are read.</remarks>
 		public void Read(byte[] buffer, int offset, int count)
 		{
-			this.CheckDisposed();
+			CheckDisposed();
 
 			int read = 0;
 			int shouldRead = count;
@@ -231,9 +286,11 @@ namespace Enyim.Caching.Memcached
 			{
 				try
 				{
-					int currentRead = this.inputStream.Read(buffer, offset, shouldRead);
+					int currentRead = _inputStream.Read(buffer, offset, shouldRead);
 					if (currentRead < 1)
+					{
 						continue;
+					}
 
 					read += currentRead;
 					offset += currentRead;
@@ -241,50 +298,60 @@ namespace Enyim.Caching.Memcached
 				}
 				catch (IOException)
 				{
-					this.isAlive = false;
+					_isAlive = false;
 					throw;
 				}
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="data"></param>
+		/// <param name="offset"></param>
+		/// <param name="length"></param>
 		public void Write(byte[] data, int offset, int length)
 		{
-			this.CheckDisposed();
+			CheckDisposed();
 
-			SocketError status;
-
-			this.socket.Send(data, offset, length, SocketFlags.None, out status);
+			_socket.Send(data, offset, length, SocketFlags.None, out var status);
 
 			if (status != SocketError.Success)
 			{
-				this.isAlive = false;
+				_isAlive = false;
 
-				ThrowHelper.ThrowSocketWriteError(this.endpoint, status);
+				ThrowHelper.ThrowSocketWriteError(_endpoint, status);
 			}
 		}
 
+		/// <summary>
+		///
+		/// </summary>
+		/// <param name="buffers"></param>
 		public void Write(IList<ArraySegment<byte>> buffers)
 		{
-			this.CheckDisposed();
-
-			SocketError status;
+			CheckDisposed();
 
 #if DEBUG
 			int total = 0;
 			for (int i = 0, C = buffers.Count; i < C; i++)
+			{
 				total += buffers[i].Count;
+			}
 
-			if (this.socket.Send(buffers, SocketFlags.None, out status) != total)
-				System.Diagnostics.Debugger.Break();
+			if (_socket.Send(buffers, SocketFlags.None, out SocketError status) != total)
+			{
+				Debugger.Break();
+			}
 #else
-			this.socket.Send(buffers, SocketFlags.None, out status);
+			_socket.Send(buffers, SocketFlags.None, out SocketError status);
 #endif
 
 			if (status != SocketError.Success)
 			{
-				this.isAlive = false;
+				_isAlive = false;
 
-				ThrowHelper.ThrowSocketWriteError(this.endpoint, status);
+				ThrowHelper.ThrowSocketWriteError(_endpoint, status);
 			}
 		}
 
@@ -294,9 +361,9 @@ namespace Enyim.Caching.Memcached
 		/// </summary>
 		public bool ReceiveAsync(AsyncIOArgs p)
 		{
-			this.CheckDisposed();
+			CheckDisposed();
 
-			if (!this.IsAlive)
+			if (!IsAlive)
 			{
 				p.Fail = true;
 				p.Result = null;
@@ -304,10 +371,12 @@ namespace Enyim.Caching.Memcached
 				return false;
 			}
 
-			if (this.helper == null)
-				this.helper = new AsyncSocketHelper(this);
+			if (_helper == null)
+			{
+				_helper = new AsyncSocketHelper(this);
+			}
 
-			return this.helper.Read(p);
+			return _helper.Read(p);
 		}
 	}
 }

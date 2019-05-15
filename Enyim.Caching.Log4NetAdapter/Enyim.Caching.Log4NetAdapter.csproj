@@ -1,54 +1,66 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{9D3F12E6-6BDD-4DED-8B25-D877780640B4}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Enyim.Caching.Log4NetAdapter</RootNamespace>
-    <AssemblyName>Enyim.Caching.Log4NetAdapter</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Company>enyim.com</Company>
+    <Copyright>Copyright � enyim.com, Attila Kisk�</Copyright>
+    <PackageId>Enyim.Caching.Log4NetAdapter</PackageId>
+    <Authors>Enyim.Caching.Log4NetAdapter</Authors>
+    <Product>Enyim.Caching.Log4NetAdapter</Product>
+    <LangVersion>latest</LangVersion>
+    <Platforms>AnyCPU;x64;x86</Platforms>
+    <Configurations>Debug;Release</Configurations>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>D:\Work\GitHub\Kaelum\EnyimMemcachedStandard\.resources\awskey.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
-  <Import Project="$(SolutionDir)\build\ProjectDefaults.targets" />
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Enyim.Caching.Log4NetAdapter.xml</DocumentationFile>
+    <DefineConstants />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Enyim.Caching.Log4NetAdapter.xml</DocumentationFile>
+    <DefineConstants />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Enyim.Caching.Log4NetAdapter.xml</DocumentationFile>
+    <DefineConstants />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Enyim.Caching.Log4NetAdapter.xml</DocumentationFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Enyim.Caching.Log4NetAdapter.xml</DocumentationFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>Enyim.Caching.Log4NetAdapter.xml</DocumentationFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="log4net, Version=1.2.11.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
-      <HintPath>..\packages\log4net.2.0.0\lib\net35-full\log4net.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+    <None Include="..\.resources\awskey.snk" Link="Properties\awskey.snk" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="..\AssemblyInfo.cs">
-      <Link>Properties\AssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="Log4NetFactory.cs" />
-    <Compile Include="Log4NetWrapper.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <PackageReference Include="log4net" Version="2.0.8" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\Enyim.Caching\Enyim.Caching.csproj">
-      <Project>{D438C0B3-A168-40B8-BDDD-61F0939DFF35}</Project>
-      <Name>Enyim.Caching</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\Enyim.Caching\Enyim.Caching.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Config.transform" />
-    <None Include="Demo.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="Enyim.Caching.Log4NetAdapter.nuspec" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(SolutionDir)\build\Tasks.targets" />
+
 </Project>

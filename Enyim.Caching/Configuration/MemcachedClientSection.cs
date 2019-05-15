@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Configuration;
 using System.Net;
-using System.Web.Configuration;
+
 using Enyim.Caching.Memcached;
-using Enyim.Reflection;
 
 namespace Enyim.Caching.Configuration
 {
@@ -74,26 +72,17 @@ namespace Enyim.Caching.Configuration
 		}
 
 		/// <summary>
-		/// Gets or sets the <see cref="T:Enyim.Caching.Memcached.IPerformanceMonitor"/> which will be used monitor the performance of the client.
-		/// </summary>
-		[ConfigurationProperty("performanceMonitor", IsRequired = false)]
-		public ProviderElement<IPerformanceMonitor> PerformanceMonitor
-		{
-			get { return (ProviderElement<IPerformanceMonitor>)base["performanceMonitor"]; }
-			set { base["performanceMonitor"] = value; }
-		}
-
-		/// <summary>
 		/// Called after deserialization.
 		/// </summary>
 		protected override void PostDeserialize()
 		{
-			WebContext hostingContext = base.EvaluationContext.HostingContext as WebContext;
+			//TODO: Is this needed?
+			//WebContext hostingContext = base.EvaluationContext.HostingContext as WebContext;
 
-			if (hostingContext != null && hostingContext.ApplicationLevel == WebApplicationLevel.BelowApplication)
-			{
-				throw new InvalidOperationException("The " + this.SectionInformation.SectionName + " section cannot be defined below the application level.");
-			}
+			//if (hostingContext != null && hostingContext.ApplicationLevel == WebApplicationLevel.BelowApplication)
+			//{
+			//	throw new InvalidOperationException("The " + SectionInformation.SectionName + " section cannot be defined below the application level.");
+			//}
 		}
 
 		/// <summary>
@@ -110,48 +99,43 @@ namespace Enyim.Caching.Configuration
 
 		IList<IPEndPoint> IMemcachedClientConfiguration.Servers
 		{
-			get { return this.Servers.ToIPEndPointCollection(); }
+			get { return Servers.ToIPEndPointCollection(); }
 		}
 
 		ISocketPoolConfiguration IMemcachedClientConfiguration.SocketPool
 		{
-			get { return this.SocketPool; }
+			get { return SocketPool; }
 		}
 
 		IMemcachedKeyTransformer IMemcachedClientConfiguration.CreateKeyTransformer()
 		{
-			return this.KeyTransformer.CreateInstance() ?? new DefaultKeyTransformer();
+			return KeyTransformer.CreateInstance() ?? new DefaultKeyTransformer();
 		}
 
 		IMemcachedNodeLocator IMemcachedClientConfiguration.CreateNodeLocator()
 		{
-			return this.NodeLocator.CreateInstance() ?? new DefaultNodeLocator();
+			return NodeLocator.CreateInstance() ?? new DefaultNodeLocator();
 		}
 
 		ITranscoder IMemcachedClientConfiguration.CreateTranscoder()
 		{
-			return this.Transcoder.CreateInstance() ?? new DefaultTranscoder();
+			return Transcoder.CreateInstance() ?? new DefaultTranscoder();
 		}
 
 		IAuthenticationConfiguration IMemcachedClientConfiguration.Authentication
 		{
-			get { return this.Authentication; }
+			get { return Authentication; }
 		}
 
 		IServerPool IMemcachedClientConfiguration.CreatePool()
 		{
-			switch (this.Protocol)
+			switch (Protocol)
 			{
 				case MemcachedProtocol.Text: return new DefaultServerPool(this, new Memcached.Protocol.Text.TextOperationFactory());
 				case MemcachedProtocol.Binary: return new Enyim.Caching.Memcached.Protocol.Binary.BinaryPool(this);
 			}
 
-			throw new ArgumentOutOfRangeException("Unknown protocol: " + (int)this.Protocol);
-		}
-
-		IPerformanceMonitor IMemcachedClientConfiguration.CreatePerformanceMonitor()
-		{
-			return this.PerformanceMonitor.CreateInstance();
+			throw new ArgumentOutOfRangeException("Unknown protocol: " + (int)Protocol);
 		}
 
 		#endregion
@@ -160,20 +144,20 @@ namespace Enyim.Caching.Configuration
 
 #region [ License information          ]
 /* ************************************************************
- * 
+ *
  *    Copyright (c) 2010 Attila Kiskó, enyim.com
- *    
+ *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
  *    You may obtain a copy of the License at
- *    
+ *
  *        http://www.apache.org/licenses/LICENSE-2.0
- *    
+ *
  *    Unless required by applicable law or agreed to in writing, software
  *    distributed under the License is distributed on an "AS IS" BASIS,
  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
- *    
+ *
  * ************************************************************/
 #endregion
